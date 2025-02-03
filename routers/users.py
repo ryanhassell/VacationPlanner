@@ -4,8 +4,7 @@ from sqlalchemy.orm import sessionmaker
 from app.global_vars import DB_HOST, DB_NAME, DB_PASSWORD, DB_USERNAME
 from fastapi import FastAPI, HTTPException, Depends, APIRouter
 from app.models import Base, User
-from schemas.user import UserResponse, GiveName
-
+from schemas.user import UserResponse
 # Define your connection string
 conn_string = f"postgresql://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}"
 engine = create_engine(conn_string)
@@ -37,4 +36,10 @@ async def get_user_by_uid(uid: int, db: Session = Depends(get_db)):
 @router.get("", response_model=list[UserResponse])
 async def list_users(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
     users = db.query(User).offset(skip).limit(limit).all()
+    return users
+
+
+@router.get("/{gid}", response_model=list[UserResponse])
+async def list_users_by_gid(gid: int, db: Session = Depends(get_db)):
+    users = db.query(User).filter(User.gid == gid).all()
     return users
