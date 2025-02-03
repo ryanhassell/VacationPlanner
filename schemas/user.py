@@ -16,7 +16,16 @@ class UserResponse(BaseModel):
 
 
 class UserCreate(BaseModel):
-    uid: int
+    first_name: str
+    last_name: str
+    email_address: str
+    phone_number: str
+    # user_type: Enum
+    password: str
+    groups: int
+
+
+class UserUpdate(BaseModel):
     first_name: str
     last_name: str
     email_address: str
