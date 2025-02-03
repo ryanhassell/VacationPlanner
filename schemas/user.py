@@ -1,3 +1,5 @@
+from typing import List
+
 from pydantic import BaseModel
 
 
@@ -9,7 +11,7 @@ class UserResponse(BaseModel):
     phone_number: str
     # user_type: Enum
     password: str
-    groups: [int]
+    groups: List[int]
 
     class Config:
         arbitrary_types_allowed = True
