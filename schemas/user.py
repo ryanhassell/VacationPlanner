@@ -9,7 +9,7 @@ class UserResponse(BaseModel):
     phone_number: str
     # user_type: Enum
     password: str
-    groups: int
+    groups: [int]
 
     class Config:
         arbitrary_types_allowed = True
