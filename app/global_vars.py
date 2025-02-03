@@ -1,4 +1,4 @@
-USERNAME="postgres"
-PASSWORD="123456789"
-HOST="localhost"
-NAME="HomeworkTracker"
+DB_USERNAME = "postgres"
+DB_PASSWORD = "123456789"
+DB_HOST = "localhost"
+DB_NAME = "VacationPlanner"
