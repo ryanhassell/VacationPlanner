@@ -28,7 +28,13 @@ def get_db():
         db.close()
 
 # API that gets a list of all the assignment in the database
-@router.get("/{a_list}", response_model=list[assignmentResponse])
-async def listAllAssignments(session: Session = Depends(get_db)):
-    listOfAssignments = session.query(Assignment).all()
-    return listOfAssignments
+@router.get("/{uid}", response_model=list[GroupResponse])
+async def get_user_by_uid(gid: int, db: Session = Depends(get_db)):
+    users = db.query(Group).filter(Group.uid == gid)
+    return users
+
+
+@router.get("", response_model=list[UserResponse])
+async def list_users(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
+    users = db.query(User).offset(skip).limit(limit).all()
+    return users

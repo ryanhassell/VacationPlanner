@@ -9,7 +9,7 @@ class GroupTypeEnum(str, Enum):
     random = "random"
 
 
-class UserResponse(BaseModel):
+class GroupResponse(BaseModel):
     gid: int
     members: List[int]
     owner: int
