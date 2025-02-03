@@ -7,4 +7,4 @@ origins = [
     "http://192.168.1.172/:8000",
 ]
 
-app.include_router()
+#app.include_router()
