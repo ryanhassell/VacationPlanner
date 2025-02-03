@@ -38,9 +38,3 @@ async def get_user_by_uid(uid: int, db: Session = Depends(get_db)):
 async def list_users(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
     users = db.query(User).offset(skip).limit(limit).all()
     return users
-
-
-@router.get("", response_model=list[GiveName])
-async def get_name(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
-    users = db.query(User).offset(skip).limit(limit).all()
-    return users

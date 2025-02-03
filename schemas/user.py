@@ -13,9 +13,3 @@ class UserResponse(BaseModel):
 
     class Config:
         arbitrary_types_allowed = True
-
-
-class GiveName(BaseModel):
-    uid: int
-    first_name: str
-    last_name: str
