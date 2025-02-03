@@ -24,7 +24,7 @@ class UserCreate(BaseModel):
     phone_number: str
     # user_type: Enum
     password: str
-    groups: int
+    groups: List[int]
 
 
 class UserUpdate(BaseModel):
@@ -34,4 +34,4 @@ class UserUpdate(BaseModel):
     phone_number: str
     # user_type: Enum
     password: str
-    groups: int
+    groups: List[int]
