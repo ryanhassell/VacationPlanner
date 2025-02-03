@@ -28,7 +28,7 @@ def get_db():
         db.close()
 
 
-@router.get("", response_model=list[UserResponse])
+@router.get("/{uid}", response_model=list[UserResponse])
 async def get_user_by_uid(uid: int, db: Session = Depends(get_db)):
     users = db.query(User).filter(User.uid == uid)
     return users
