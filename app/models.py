@@ -12,6 +12,8 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import declarative_base
 
+from schemas.group import GroupTypeEnum
+
 Base = declarative_base()
 
 
@@ -31,3 +33,11 @@ class Group(Base):
     members = Column(ARRAY(Integer))
     owner = Column(Integer)
     admin = Column(ARRAY(Integer))
+    group_name = Column(String)
+    location_lat = Column(Double)
+    location_long = Column(Double)
+    group_type = Column(Enum(GroupTypeEnum, name="group_type"))
+
+##class Random(Base):
+
+##class Planned(Base):
