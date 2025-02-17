@@ -35,3 +35,11 @@ class UserUpdate(BaseModel):
     # user_type: Enum
     password: str
     groups: List[int]
+
+from pydantic import BaseModel
+
+class UserChangePassword(BaseModel):
+    new_password: str
+
+    class Config:
+        orm_mode = True

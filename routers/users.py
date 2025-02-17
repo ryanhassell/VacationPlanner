@@ -4,7 +4,7 @@ from sqlalchemy.orm import sessionmaker
 from app.global_vars import DB_HOST, DB_NAME, DB_PASSWORD, DB_USERNAME
 from fastapi import FastAPI, HTTPException, Depends, APIRouter
 from app.models import Base, User, Group
-from schemas.user import UserResponse, UserCreate, UserUpdate
+from schemas.user import UserResponse, UserCreate, UserUpdate, UserChangePassword
 
 # Define your connection string
 conn_string = f"postgresql://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}"
@@ -106,3 +106,18 @@ async def user_login(email: str, password: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
     return user
+
+
+@router.put("/reset-password/{email}", response_model=UserChangePassword)
+async def reset_password(email: str, user_data: UserChangePassword, db: Session = Depends(get_db)):
+    user_to_update = db.query(User).filter(User.email_address == email).first()
+
+    if not user_to_update:
+        raise HTTPException(status_code=404, detail=f"User with email {email} not found")
+
+    user_to_update.password = user_data.new_password
+    db.commit()
+    db.refresh(user_to_update)
+
+    return user_to_update
+
