@@ -51,9 +51,7 @@ async def list_users_by_gid(gid: int, db: Session = Depends(get_db)):
 async def create_group(group: GroupCreate, db: Session = Depends(get_db)):
     # Create a new group in the database
     new_group = Group(
-        members=group.members,
         owner=group.owner,
-        admin=group.admin,
         group_name=group.group_name,
         location_lat=group.location_lat,
         location_long=group.location_long,
