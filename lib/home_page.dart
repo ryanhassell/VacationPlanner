@@ -63,7 +63,7 @@ class HomePage extends StatelessWidget {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const ProfileInfoPage()),
+                  MaterialPageRoute(builder: (context) => ProfileInfoPage(uid: uid)),
                 );
               },
               child: const Text('Profile Info'),

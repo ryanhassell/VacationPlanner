@@ -8,7 +8,6 @@ class ViewGroupsPage extends StatelessWidget {
   Future<List<String>> fetchUserGroups(int uid) async {
     // This function is a placeholder to simulate fetching groups based on user ID.
     // Replace with real API calls or data fetching logic
-    await Future.delayed(Duration(seconds: 2)); // Simulate network delay
     return ['Group 1', 'Group 2', 'Group 3']; // Example groups
   }
 
