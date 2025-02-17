@@ -19,6 +19,17 @@ class _CreateUserPageState extends State<CreateUserPage> {
   final TextEditingController _passwordController = TextEditingController();
 
   Future<void> _createUser() async {
+    if (_firstNameController.text.isEmpty ||
+        _lastNameController.text.isEmpty ||
+        _emailController.text.isEmpty ||
+        _phoneController.text.isEmpty ||
+        _passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('All fields must be filled out!')),
+      );
+      return;
+    }
+
     const String apiUrl = 'http://$ip/users';
 
     final response = await http.post(
