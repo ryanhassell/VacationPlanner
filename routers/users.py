@@ -30,8 +30,10 @@ def get_db():
 
 @router.get("/{uid}", response_model=UserResponse)
 async def get_user_by_uid(uid: int, db: Session = Depends(get_db)):
-    users = db.query(User).filter(User.uid == uid)
-    return users
+    user = db.query(User).filter(User.uid == uid).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
 
 
 @router.get("", response_model=list[UserResponse])
