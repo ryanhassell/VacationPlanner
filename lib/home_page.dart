@@ -9,7 +9,6 @@ class HomePage extends StatelessWidget {
 
   const HomePage({super.key, required this.uid});
 
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -54,7 +53,7 @@ class HomePage extends StatelessWidget {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const ViewGroupsPage()),
+                  MaterialPageRoute(builder: (context) => ViewGroupsPage(uid: uid)),
                 );
               },
               child: const Text('View Groups'),
