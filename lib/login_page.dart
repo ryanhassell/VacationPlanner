@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import 'global_vars.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'home_page.dart';
 import 'forgot_password_page.dart';
 import 'create_user_page.dart';
@@ -16,26 +14,36 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  bool _loading = false;
 
   Future<void> _login() async {
-    const String apiUrl = 'http://$ip/users/login';
+    setState(() {
+      _loading = true;
+    });
 
-    final response = await http.get(
-      Uri.parse('$apiUrl/${_emailController.text}/${_passwordController.text}'),
-    );
+    try {
+      // Sign in using Firebase Authentication
+      UserCredential userCredential = await FirebaseAuth.instance
+          .signInWithEmailAndPassword(
+          email: _emailController.text.trim(),
+          password: _passwordController.text);
 
-    if (response.statusCode == 200) {
-      final userData = jsonDecode(response.body);
+      // Retrieve the Firebase UID
+      String uid = userCredential.user!.uid;
+
+      // Navigate to HomePage with the UID
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(
-          builder: (context) => HomePage(uid: userData['uid']),
-        ),
+        MaterialPageRoute(builder: (context) => HomePage(uid: uid)),
       );
-    } else {
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Invalid email or password')),
       );
+    } finally {
+      setState(() {
+        _loading = false;
+      });
     }
   }
 
@@ -53,7 +61,7 @@ class _LoginPageState extends State<LoginPage> {
           children: [
             TextField(
               controller: _emailController,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 labelText: 'Email',
                 border: OutlineInputBorder(),
               ),
@@ -62,13 +70,15 @@ class _LoginPageState extends State<LoginPage> {
             TextField(
               controller: _passwordController,
               obscureText: true,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 labelText: 'Password',
                 border: OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 20),
-            ElevatedButton(
+            _loading
+                ? const CircularProgressIndicator()
+                : ElevatedButton(
               onPressed: _login,
               child: const Text('Login'),
             ),
@@ -76,7 +86,8 @@ class _LoginPageState extends State<LoginPage> {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const ForgotPasswordPage()),
+                  MaterialPageRoute(
+                      builder: (context) => const ForgotPasswordPage()),
                 );
               },
               child: const Text('Forgot Password?'),
@@ -85,7 +96,8 @@ class _LoginPageState extends State<LoginPage> {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const CreateUserPage()),
+                  MaterialPageRoute(
+                      builder: (context) => const CreateUserPage()),
                 );
               },
               child: const Text('Create User'),

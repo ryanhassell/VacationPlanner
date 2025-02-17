@@ -10,7 +10,6 @@ class UserResponse(BaseModel):
     email_address: str
     phone_number: str
     # user_type: Enum
-    password: str
     groups: List[int]
 
     class Config:
@@ -23,7 +22,6 @@ class UserCreate(BaseModel):
     email_address: str
     phone_number: str
     # user_type: Enum
-    password: str
     groups: List[int]
 
 
@@ -33,7 +31,6 @@ class UserUpdate(BaseModel):
     email_address: str
     phone_number: str
     # user_type: Enum
-    password: str
     groups: List[int]
 
 from pydantic import BaseModel

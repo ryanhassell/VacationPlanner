@@ -5,7 +5,7 @@ import 'view_groups_page.dart';
 import 'profile_info_page.dart';
 
 class HomePage extends StatelessWidget {
-  final int uid;
+  final String uid;
 
   const HomePage({super.key, required this.uid});
 
