@@ -47,7 +47,7 @@ async def list_users_by_gid(gid: int, db: Session = Depends(get_db)):
     return members
 
 
-@router.post("", response_model=GroupResponse)
+@router.post("", response_model=GroupCreate)
 async def create_group(group: GroupCreate, db: Session = Depends(get_db)):
     # Create a new group in the database
     new_group = Group(
