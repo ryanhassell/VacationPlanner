@@ -44,6 +44,7 @@ class _LoginPageState extends State<LoginPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Login Page'),
+        automaticallyImplyLeading: false,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -88,13 +89,6 @@ class _LoginPageState extends State<LoginPage> {
                 );
               },
               child: const Text('Create User'),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              child: const Text('Back to Home'),
             ),
           ],
         ),

@@ -14,6 +14,7 @@ class HomePage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Vacation Planner Home Page'),
+        automaticallyImplyLeading: false,
       ),
       body: Center(
         child: Column(
