@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'login_page.dart';
+import 'create_group.dart';
+import 'view_groups.dart';
+import 'profile_info.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -8,7 +11,7 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Vacation Planner Temporary Home Page'),
+        title: const Text('Vacation Planner Home Page'),
       ),
       body: Center(
         child: Column(
@@ -27,6 +30,36 @@ class HomePage extends StatelessWidget {
                 );
               },
               child: const Text('Go to Login Page'),
+            ),
+            const SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const CreateGroupPage()),
+                );
+              },
+              child: const Text('Create Group'),
+            ),
+            const SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const ViewGroupsPage()),
+                );
+              },
+              child: const Text('View Groups'),
+            ),
+            const SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const ProfileInfoPage()),
+                );
+              },
+              child: const Text('Profile Info'),
             ),
           ],
         ),
