@@ -3,7 +3,7 @@ from typing import List
 
 from pydantic import BaseModel
 
-
+#test
 class GroupTypeEnum(str, Enum):
     planned = "planned"
     random = "random"
