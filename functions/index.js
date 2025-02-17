@@ -1,34 +1,32 @@
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
-const nodemailer = require("nodemailer");
 
-admin.initializeApp();
-const db = admin.firestore();
+if (!admin.apps.length) {
+  admin.initializeApp();
+}
 
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: "your-email@gmail.com",
-    pass: "your-email-password",
-  },
-});
+const auth = admin.auth();
 
-exports.sendOtpEmail = functions.https.onCall(async (data, context) => {
-  const email = data.email;
-  const otp = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit OTP
+exports.sendPasswordResetEmail = functions.https.onCall(async (data, context) => {
+  try {
+    console.log("🔍 Function triggered. Raw data received:", JSON.stringify(data));
 
-  await db.collection("otps").doc(email).set({
-    otp: otp,
-    expiresAt: admin.firestore.Timestamp.fromDate(new Date(Date.now() + 5 * 60000)), // Expires in 5 mins
-  });
+    // **STEP 1: VALIDATE EMAIL**
+    if (!data || !data.email || typeof data.email !== "string" || data.email.trim() === "") {
+      throw new functions.https.HttpsError("invalid-argument", "A valid email is required.");
+    }
 
-  const mailOptions = {
-    from: "your-email@gmail.com",
-    to: email,
-    subject: "Your One-Time Password (OTP)",
-    text: `Your OTP code is: ${otp}. It will expire in 5 minutes.`,
-  };
+    const email = data.email.trim().toLowerCase();
 
-  await transporter.sendMail(mailOptions);
-  return {success: true, message: "OTP sent!"};
+    // **STEP 2: SEND PASSWORD RESET EMAIL**
+    await auth.generatePasswordResetLink(email);
+
+    console.log(`✅ Password reset link sent to: ${email}`);
+
+    return { success: true, message: "Password reset email sent!" };
+
+  } catch (error) {
+    console.error("🔥 Error in sendPasswordResetEmail function:", error);
+    throw new functions.https.HttpsError("internal", error.message || "Failed to send password reset email.");
+  }
 });
