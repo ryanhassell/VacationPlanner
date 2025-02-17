@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'login_page.dart';
-import 'create_group.dart';
-import 'view_groups.dart';
-import 'profile_info.dart';
+import 'create_group_page.dart';
+import 'view_groups_page.dart';
+import 'profile_info_page.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});

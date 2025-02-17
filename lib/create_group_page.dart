@@ -9,6 +9,9 @@ class CreateGroupPage extends StatefulWidget {
 
 class _CreateGroupPageState extends State<CreateGroupPage> {
   final TextEditingController _groupNameController = TextEditingController();
+  final TextEditingController _userIdController = TextEditingController();
+  final TextEditingController _longitudeController = TextEditingController();
+  final TextEditingController _latitudeController = TextEditingController();
   String _selectedGroupType = 'Planned';
 
   @override
@@ -22,6 +25,14 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            TextField(
+              controller: _userIdController,
+              decoration: InputDecoration(
+                labelText: 'User ID',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 10),
             TextField(
               controller: _groupNameController,
               decoration: InputDecoration(
@@ -47,6 +58,24 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
                 labelText: 'Group Type',
                 border: OutlineInputBorder(),
               ),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: _longitudeController,
+              decoration: InputDecoration(
+                labelText: 'Longitude',
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.number,
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: _latitudeController,
+              decoration: InputDecoration(
+                labelText: 'Latitude',
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.number,
             ),
             const SizedBox(height: 20),
             ElevatedButton(
