@@ -19,7 +19,7 @@ Base = declarative_base()
 
 class User(Base):
     __tablename__ = "users"
-    uid = Column(Integer, primary_key=True, index=True)
+    uid = Column(String, primary_key=True, index=True)
     first_name = Column(String)
     last_name = Column(String)
     email_address = Column(String)

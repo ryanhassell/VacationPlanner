@@ -4,7 +4,7 @@ from pydantic import BaseModel
 
 
 class UserResponse(BaseModel):
-    uid: int
+    uid: str
     first_name: str
     last_name: str
     email_address: str
