@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_functions/cloud_functions.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
   const ForgotPasswordPage({super.key});
@@ -12,28 +12,30 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   final TextEditingController _emailController = TextEditingController();
   bool _loading = false;
 
-  Future<void> _sendOtp() async {
+  Future<void> _sendPasswordResetEmail() async {
+    final email = _emailController.text.trim();
+
+    if (email.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please enter a valid email.")),
+      );
+      return;
+    }
+
     setState(() => _loading = true);
 
     try {
-      // Correct way to call Firebase Functions for future reference
-      final HttpsCallable callable = FirebaseFunctions.instanceFor(region: "us-central1")
-          .httpsCallable('sendOtpEmail');
+      // **✅ Sends password reset email using Firebase Auth (No Cloud Functions Needed)**
+      await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
 
-      final response = await callable.call({'email': _emailController.text});
-
-      if (response.data['success']) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("OTP sent to your email!")),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Error sending OTP. Try again!")),
-        );
-      }
-    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e")),
+        const SnackBar(content: Text("Password reset email sent! Check your inbox.")),
+      );
+
+    } catch (e) {
+      print("🔥 Error sending reset email: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error: ${e.toString()}")),
       );
     }
 
@@ -60,8 +62,8 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
             _loading
                 ? const CircularProgressIndicator()
                 : ElevatedButton(
-              onPressed: _sendOtp,
-              child: const Text('Send OTP'),
+              onPressed: _sendPasswordResetEmail,
+              child: const Text('Send Reset Link'),
             ),
           ],
         ),
