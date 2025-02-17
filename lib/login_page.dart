@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'global_vars.dart';
 import 'home_page.dart';
 import 'forgot_password_page.dart';
 import 'create_user_page.dart';
@@ -17,14 +18,7 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _passwordController = TextEditingController();
 
   Future<void> _login() async {
-    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Fields cannot be empty')),
-      );
-      return;
-    }
-
-    const String apiUrl = 'http://127.0.0.1:8000/login';
+    const String apiUrl = 'http://$ip/users/login';
 
     final response = await http.get(
       Uri.parse('$apiUrl/${_emailController.text}/${_passwordController.text}'),
@@ -50,7 +44,7 @@ class _LoginPageState extends State<LoginPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Login Page'),
-        automaticallyImplyLeading: false, // Removes back arrow
+        automaticallyImplyLeading: false,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
