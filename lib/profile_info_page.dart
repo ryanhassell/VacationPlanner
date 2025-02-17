@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'home_page.dart';
 
 class ProfileInfoPage extends StatelessWidget {
-  final int uid;
+  final String uid;
 
   const ProfileInfoPage({super.key, required this.uid});
 
