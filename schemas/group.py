@@ -5,8 +5,8 @@ from pydantic import BaseModel
 
 #test
 class GroupTypeEnum(str, Enum):
-    planned = "planned"
-    random = "random"
+    planned = "Planned"
+    random = "Random"
 
 
 class GroupResponse(BaseModel):

@@ -1,4 +1,10 @@
+import 'dart:ffi';
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+
+import 'global_vars.dart';
 
 class CreateGroupPage extends StatefulWidget {
   const CreateGroupPage({super.key});
@@ -13,6 +19,34 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
   final TextEditingController _longitudeController = TextEditingController();
   final TextEditingController _latitudeController = TextEditingController();
   String _selectedGroupType = 'Planned';
+
+
+  Future<void> _createGroup() async {
+    const String apiUrl = 'http://$ip/groups';
+
+    final response = await http.post(
+      Uri.parse(apiUrl),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'owner': _userIdController.text,
+        'group_name': _groupNameController.text,
+        'location_long': _longitudeController.text,
+        'location_lat': _latitudeController.text,
+        'group_type': _selectedGroupType
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('User created successfully!')),
+      );
+      Navigator.pop(context);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: ${response.body}')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -41,6 +75,24 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
               ),
             ),
             const SizedBox(height: 10),
+            TextField(
+              controller: _longitudeController,
+              decoration: InputDecoration(
+                labelText: 'Longitude',
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.number,
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: _latitudeController,
+              decoration: InputDecoration(
+                labelText: 'Latitude',
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.number,
+            ),
+            const SizedBox(height: 20),
             DropdownButtonFormField<String>(
               value: _selectedGroupType,
               items: ['Planned', 'Random']
@@ -60,28 +112,8 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
               ),
             ),
             const SizedBox(height: 10),
-            TextField(
-              controller: _longitudeController,
-              decoration: InputDecoration(
-                labelText: 'Longitude',
-                border: OutlineInputBorder(),
-              ),
-              keyboardType: TextInputType.number,
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: _latitudeController,
-              decoration: InputDecoration(
-                labelText: 'Latitude',
-                border: OutlineInputBorder(),
-              ),
-              keyboardType: TextInputType.number,
-            ),
-            const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: () {
-                // Handle group creation logic
-              },
+              onPressed: _createGroup,
               child: const Text('Create Group'),
             ),
             const SizedBox(height: 20),
