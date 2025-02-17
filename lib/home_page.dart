@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'login_page.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -9,10 +10,25 @@ class HomePage extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Vacation Planner Temporary Home Page'),
       ),
-      body: const Center(
-        child: Text(
-          'Welcome to the Vacation Planner!',
-          style: TextStyle(fontSize: 20),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text(
+              'Welcome to the Vacation Planner!',
+              style: TextStyle(fontSize: 20),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LoginPage()),
+                );
+              },
+              child: const Text('Go to Login Page'),
+            ),
+          ],
         ),
       ),
     );

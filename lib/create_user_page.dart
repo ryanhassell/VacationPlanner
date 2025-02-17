@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
-import 'forgot_password_page.dart';
-import 'create_user_page.dart';
 
-class LoginPage extends StatelessWidget {
-  const LoginPage({super.key});
+class CreateUserPage extends StatelessWidget {
+  const CreateUserPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Login Page'),
+        title: const Text('Create User'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -18,9 +16,31 @@ class LoginPage extends StatelessWidget {
           children: [
             TextField(
               decoration: InputDecoration(
-                labelText: 'Username',
+                labelText: 'First Name',
                 border: OutlineInputBorder(),
               ),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              decoration: InputDecoration(
+                labelText: 'Last Name',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              decoration: InputDecoration(
+                labelText: 'Email Address',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              decoration: InputDecoration(
+                labelText: 'Phone Number',
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.phone,
             ),
             const SizedBox(height: 10),
             TextField(
@@ -33,32 +53,14 @@ class LoginPage extends StatelessWidget {
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: () {},
-              child: const Text('Login'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const ForgotPasswordPage()),
-                );
-              },
-              child: const Text('Forgot Password?'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const CreateUserPage()),
-                );
-              },
-              child: const Text('Create User'),
+              child: const Text('Create Account'),
             ),
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: () {
                 Navigator.pop(context);
               },
-              child: const Text('Back to Home'),
+              child: const Text('Back'),
             ),
           ],
         ),
