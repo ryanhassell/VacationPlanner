@@ -5,14 +5,19 @@ from app.global_vars import DB_HOST, DB_NAME, DB_PASSWORD, DB_USERNAME
 from fastapi import FastAPI, HTTPException, Depends, APIRouter
 from app.models import Base, User, Group
 from schemas.user import UserResponse, UserCreate, UserUpdate, UserChangePassword
+import re
+import firebase_admin
+from firebase_admin import auth, credentials
 
-# Define your connection string
+# Firebase Admin SDK Initialization
+if not firebase_admin._apps:
+    cred = credentials.Certificate("C:/Users/ryanh/Downloads/vacation-698a8-firebase-adminsdk-fbsvc-61dc104cf9.json")
+    firebase_admin.initialize_app(cred)
+
+# Define database connection string
 conn_string = f"postgresql://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}"
 engine = create_engine(conn_string)
 Base.metadata.create_all(bind=engine)
-
-# Use the create_engine function to establish the connection
-engine = create_engine(conn_string)
 
 # Create a session factory
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -28,84 +33,116 @@ def get_db():
         db.close()
 
 
-@router.get("/{uid}", response_model=UserResponse)
-async def get_user_by_uid(uid: int, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.uid == uid).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    return user
+def format_phone_number(phone: str) -> str:
+    """Sanitize and convert a phone number to E.164 format."""
+    if not phone:
+        return None  # Firebase allows users without phone numbers
 
+    # Remove any non-numeric characters except '+'
+    phone = re.sub(r"[^\d+]", "", phone)
 
-@router.get("", response_model=list[UserResponse])
-async def list_users(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
-    users = db.query(User).offset(skip).limit(limit).all()
-    return users
+    # Ensure it starts with a '+'
+    if not phone.startswith("+"):
+        raise ValueError("Phone number must be in E.164 format (e.g., +16108362991)")
 
-
-@router.get("/{uid}", response_model=list[UserResponse])
-async def list_groups_by_uid(uid: int, db: Session = Depends(get_db)):
-    users = db.query(Group).filter(Group.gid == uid).all()
-    return users
+    return phone
 
 
 @router.post("", response_model=UserResponse)
 async def create_user(user: UserCreate, db: Session = Depends(get_db)):
-    # Create a new user in the database
-    new_user = User(
-        first_name=user.first_name,
-        last_name=user.last_name,
-        email_address=user.email_address,
-        phone_number=user.phone_number,
-        password=user.password,
-        groups=user.groups
-    )
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-    return new_user
+    existing_user = db.query(User).filter(User.email_address == user.email_address).first()
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Email already exists.")
+
+    try:
+        formatted_phone = format_phone_number(user.phone_number) if user.phone_number else None
+
+        # Step 1: Create Firebase User FIRST
+        firebase_user = auth.create_user(
+            email=user.email_address,
+            password=user.password,
+            display_name=f"{user.first_name} {user.last_name}",
+            phone_number=formatted_phone
+        )
+
+        firebase_uid = firebase_user.uid  # Use Firebase UID as UID
+        print(f"Firebase user created with UID: {firebase_uid}")
+
+        # Step 2: Store Firebase UID as UID in PostgreSQL
+        new_user = User(
+            uid=firebase_uid,  # Use Firebase UID as PostgreSQL UID
+            first_name=user.first_name,
+            last_name=user.last_name,
+            email_address=user.email_address,
+            phone_number=user.phone_number,
+            password=user.password,
+            groups=user.groups
+        )
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+
+        return new_user
+
+    except Exception as e:
+        print(f"Error creating Firebase user: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to create user: {str(e)}")
 
 
 @router.delete("/{uid}", response_model=str)
 async def delete_user(uid: int, db: Session = Depends(get_db)):
-    # Retrieve the User object by its ID
+    # Retrieve the user by ID
     user_to_delete = db.query(User).filter(User.uid == uid).first()
 
-    if user_to_delete:
-        # Delete the User object
+    if not user_to_delete:
+        raise HTTPException(status_code=404, detail=f"User with ID {uid} not found")
+
+    try:
+        # Delete user from Firebase
+        if user_to_delete.firebase_uid:
+            auth.delete_user(user_to_delete.firebase_uid)
+            print(f"Firebase user {user_to_delete.firebase_uid} deleted.")
+
+        # Delete the user from PostgreSQL
         db.delete(user_to_delete)
         db.commit()
-        return f"User {uid} successfully deleted."
-    else:
-        raise HTTPException(status_code=404, detail=f"User with ID {uid} not found")
+
+        return f"User {uid} successfully deleted from both Firebase and PostgreSQL."
+
+    except Exception as e:
+        print(f"Error deleting Firebase user: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to delete user: {str(e)}")
 
 
 @router.put("/{uid}", response_model=UserResponse)
-async def update_user(
-    uid: int, user_data: UserUpdate, db: Session = Depends(get_db)
-):
-    # Retrieve the User object by its ID
+async def update_user(uid: int, user_data: UserUpdate, db: Session = Depends(get_db)):
     user_to_update = db.query(User).filter(User.uid == uid).first()
 
-    if user_to_update:
-        # Update the User object with the new data
+    if not user_to_update:
+        raise HTTPException(status_code=404, detail=f"User with ID {uid} not found")
+
+    try:
+        # Update user in Firebase Auth
+        auth.update_user(
+            user_to_update.firebase_uid,
+            email=user_data.email_address if user_data.email_address else user_to_update.email_address,
+            phone_number=user_data.phone_number if user_data.phone_number else user_to_update.phone_number,
+            display_name=f"{user_data.first_name} {user_data.last_name}" if user_data.first_name and user_data.last_name else None
+        )
+        print(f"Firebase user {user_to_update.firebase_uid} updated.")
+
+        # Update user in PostgreSQL
         for field, value in user_data.dict().items():
             setattr(user_to_update, field, value)
 
         db.commit()
         db.refresh(user_to_update)
+
         return user_to_update
-    else:
-        raise HTTPException(status_code=404, detail=f"User with ID {uid} not found")
 
-
-@router.get("/login/{email}/{password}", response_model=UserResponse)
-async def user_login(email: str, password: str, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email_address == email, User.password == password).first()
-
-    if not user:
-        raise HTTPException(status_code=401, detail="Invalid email or password")
-
-    return user
+    except Exception as e:
+        print(f"Error updating Firebase user: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to update user: {str(e)}")
 
 
 @router.put("/reset-password/{email}", response_model=UserChangePassword)
@@ -115,9 +152,18 @@ async def reset_password(email: str, user_data: UserChangePassword, db: Session 
     if not user_to_update:
         raise HTTPException(status_code=404, detail=f"User with email {email} not found")
 
-    user_to_update.password = user_data.new_password
-    db.commit()
-    db.refresh(user_to_update)
+    try:
+        # Update password in Firebase Authentication
+        auth.update_user(user_to_update.firebase_uid, password=user_data.new_password)
+        print(f"Firebase password updated for {email}")
 
-    return user_to_update
+        # Update password in PostgreSQL
+        user_to_update.password = user_data.new_password
+        db.commit()
+        db.refresh(user_to_update)
 
+        return user_to_update
+
+    except Exception as e:
+        print(f"Error resetting Firebase password: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to reset password: {str(e)}")
