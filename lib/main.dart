@@ -16,7 +16,7 @@ class VacationPlannerApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.yellow),
         useMaterial3: true,
       ),
-      home: const HomePage(), // Use the actual home page
+      home: const HomePage(uid:-1), // Use the actual home page
     );
   }
 }

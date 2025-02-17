@@ -5,7 +5,9 @@ import 'view_groups_page.dart';
 import 'profile_info_page.dart';
 
 class HomePage extends StatelessWidget {
-  const HomePage({super.key});
+  final int uid;
+
+  const HomePage({super.key, required this.uid});
 
   @override
   Widget build(BuildContext context) {
@@ -20,6 +22,11 @@ class HomePage extends StatelessWidget {
             const Text(
               'Welcome to the Vacation Planner!',
               style: TextStyle(fontSize: 20),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'Logged in as User ID: $uid',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),
             ElevatedButton(

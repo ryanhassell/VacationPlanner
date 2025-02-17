@@ -96,3 +96,13 @@ async def update_user(
         return user_to_update
     else:
         raise HTTPException(status_code=404, detail=f"User with ID {uid} not found")
+
+
+@router.get("/login/{email}/{password}", response_model=UserResponse)
+async def user_login(email: str, password: str, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email_address == email, User.password == password).first()
+
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+
+    return user
