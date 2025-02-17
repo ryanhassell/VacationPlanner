@@ -6,8 +6,8 @@ from fastapi import FastAPI, HTTPException, Depends, APIRouter
 from app.models import Base, User, Group
 from schemas.user import UserResponse, UserCreate, UserUpdate, UserChangePassword
 import re
-import firebase_admin
-from firebase_admin import auth, credentials
+import firebase_admin # this error is here for some reason but still works idk
+from firebase_admin import auth, credentials #same here no idea
 
 # Firebase Admin SDK Initialization
 if not firebase_admin._apps:
