@@ -15,17 +15,49 @@ class _CreateUserPageState extends State<CreateUserPage> {
   final TextEditingController _firstNameController = TextEditingController();
   final TextEditingController _lastNameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _areaCodeController = TextEditingController();
+  final TextEditingController _prefixController = TextEditingController();
+  final TextEditingController _lineNumberController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+
+  final FocusNode _prefixFocusNode = FocusNode();
+  final FocusNode _lineNumberFocusNode = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    _areaCodeController.text = "";
+    _prefixController.text = "";
+    _lineNumberController.text = "";
+  }
+
+  String getFormattedPhoneNumber() {
+    if (_areaCodeController.text.length != 3 ||
+        _prefixController.text.length != 3 ||
+        _lineNumberController.text.length != 4) {
+      return "";
+    }
+    return "+1${_areaCodeController.text}${_prefixController.text}${_lineNumberController.text}";
+  }
 
   Future<void> _createUser() async {
     if (_firstNameController.text.isEmpty ||
         _lastNameController.text.isEmpty ||
         _emailController.text.isEmpty ||
-        _phoneController.text.isEmpty ||
-        _passwordController.text.isEmpty) {
+        _passwordController.text.isEmpty ||
+        _areaCodeController.text.isEmpty ||
+        _prefixController.text.isEmpty ||
+        _lineNumberController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('All fields must be filled out!')),
+      );
+      return;
+    }
+
+    String formattedPhone = getFormattedPhoneNumber();
+    if (formattedPhone.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a valid phone number.')),
       );
       return;
     }
@@ -39,7 +71,7 @@ class _CreateUserPageState extends State<CreateUserPage> {
         'first_name': _firstNameController.text,
         'last_name': _lastNameController.text,
         'email_address': _emailController.text,
-        'phone_number': _phoneController.text,
+        'phone_number': formattedPhone,
         'password': _passwordController.text,
         'groups': []
       }),
@@ -60,9 +92,7 @@ class _CreateUserPageState extends State<CreateUserPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Create User'),
-      ),
+      appBar: AppBar(title: const Text('Create User')),
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -71,7 +101,7 @@ class _CreateUserPageState extends State<CreateUserPage> {
             children: [
               TextField(
                 controller: _firstNameController,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: 'First Name',
                   border: OutlineInputBorder(),
                 ),
@@ -79,7 +109,7 @@ class _CreateUserPageState extends State<CreateUserPage> {
               const SizedBox(height: 10),
               TextField(
                 controller: _lastNameController,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: 'Last Name',
                   border: OutlineInputBorder(),
                 ),
@@ -87,25 +117,86 @@ class _CreateUserPageState extends State<CreateUserPage> {
               const SizedBox(height: 10),
               TextField(
                 controller: _emailController,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: 'Email Address',
                   border: OutlineInputBorder(),
                 ),
+                keyboardType: TextInputType.emailAddress,
               ),
               const SizedBox(height: 10),
-              TextField(
-                controller: _phoneController,
-                decoration: InputDecoration(
-                  labelText: 'Phone Number',
-                  border: OutlineInputBorder(),
-                ),
-                keyboardType: TextInputType.phone,
+
+              // Segmented Phone Number Input
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Center(
+                      child: Text("+1", style: TextStyle(fontSize: 18)),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: TextField(
+                      controller: _areaCodeController,
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                      ),
+                      keyboardType: TextInputType.number,
+                      maxLength: 3,
+                      textAlign: TextAlign.center,
+                      buildCounter: (context, {int? currentLength, bool? isFocused, int? maxLength}) => null,
+                      onChanged: (value) {
+                        if (value.length == 3) {
+                          FocusScope.of(context).requestFocus(_prefixFocusNode);
+                        }
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: TextField(
+                      controller: _prefixController,
+                      focusNode: _prefixFocusNode,
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                      ),
+                      keyboardType: TextInputType.number,
+                      maxLength: 3,
+                      textAlign: TextAlign.center,
+                      buildCounter: (context, {int? currentLength, bool? isFocused, int? maxLength}) => null,
+                      onChanged: (value) {
+                        if (value.length == 3) {
+                          FocusScope.of(context).requestFocus(_lineNumberFocusNode);
+                        }
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: TextField(
+                      controller: _lineNumberController,
+                      focusNode: _lineNumberFocusNode,
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                      ),
+                      keyboardType: TextInputType.number,
+                      maxLength: 4,
+                      textAlign: TextAlign.center,
+                      buildCounter: (context, {int? currentLength, bool? isFocused, int? maxLength}) => null,
+                    ),
+                  ),
+                ],
               ),
+
               const SizedBox(height: 10),
               TextField(
                 controller: _passwordController,
                 obscureText: true,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: 'Password',
                   border: OutlineInputBorder(),
                 ),

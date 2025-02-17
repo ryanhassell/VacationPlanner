@@ -24,7 +24,6 @@ class User(Base):
     last_name = Column(String)
     email_address = Column(String)
     phone_number = Column(String)
-    password = Column(String)
     groups= Column(ARRAY(Integer))
 
 class Group(Base):

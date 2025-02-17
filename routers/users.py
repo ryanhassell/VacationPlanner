@@ -46,7 +46,8 @@ def format_phone_number(phone: str) -> str:
         raise ValueError("Phone number must be in E.164 format (e.g., +16108362991)")
 
     return phone
-
+#consider deleting bc I changed the input in create account to not need this
+#future me problem
 
 @router.post("", response_model=UserResponse)
 async def create_user(user: UserCreate, db: Session = Depends(get_db)):
@@ -60,7 +61,6 @@ async def create_user(user: UserCreate, db: Session = Depends(get_db)):
         # Step 1: Create Firebase User FIRST
         firebase_user = auth.create_user(
             email=user.email_address,
-            password=user.password,
             display_name=f"{user.first_name} {user.last_name}",
             phone_number=formatted_phone
         )
@@ -75,7 +75,6 @@ async def create_user(user: UserCreate, db: Session = Depends(get_db)):
             last_name=user.last_name,
             email_address=user.email_address,
             phone_number=user.phone_number,
-            password=user.password,
             groups=user.groups
         )
         db.add(new_user)
@@ -143,6 +142,35 @@ async def update_user(uid: int, user_data: UserUpdate, db: Session = Depends(get
     except Exception as e:
         print(f"Error updating Firebase user: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to update user: {str(e)}")
+
+
+@router.post("/login", response_model=UserResponse)
+async def user_login(data: dict, db: Session = Depends(get_db)):
+    """ Authenticates user via Firebase and retrieves user details from PostgreSQL """
+    email = data.get("email")
+    password = data.get("password")
+
+    if not email or not password:
+        raise HTTPException(status_code=400, detail="Email and password are required")
+
+    try:
+        # Verify the user's credentials with Firebase
+        user = auth.get_user_by_email(email)
+
+        if not user:
+            raise HTTPException(status_code=401, detail="Invalid credentials")
+
+        # Fetch user details from PostgreSQL (excluding password)
+        db_user = db.query(User).filter(User.email_address == email).first()
+
+        if not db_user:
+            raise HTTPException(status_code=404, detail="User not found in database")
+
+        return db_user  # Return user details (but no password)
+
+    except Exception as e:
+        print(f"Error logging in: {str(e)}")
+        raise HTTPException(status_code=401, detail="Invalid email or password")
 
 
 @router.put("/reset-password/{email}", response_model=UserChangePassword)

@@ -25,7 +25,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     setState(() => _loading = true);
 
     try {
-      // **✅ Sends password reset email using Firebase Auth (No Cloud Functions Needed)**
+      // Sends password reset email using Firebase Auth
       await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -33,7 +33,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
       );
 
     } catch (e) {
-      print("🔥 Error sending reset email: $e");
+      print("Error sending reset email: $e");
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Error: ${e.toString()}")),
       );
