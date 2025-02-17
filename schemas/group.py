@@ -21,9 +21,7 @@ class GroupResponse(BaseModel):
 
 
 class GroupCreate(BaseModel):
-    members: List[int]
     owner: int
-    admin: List[int]
     group_name: str
     location_lat: float
     location_long: float
