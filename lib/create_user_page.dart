@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
+import 'global_vars.dart';
+
 class CreateUserPage extends StatefulWidget {
   const CreateUserPage({super.key});
 
@@ -17,7 +19,7 @@ class _CreateUserPageState extends State<CreateUserPage> {
   final TextEditingController _passwordController = TextEditingController();
 
   Future<void> _createUser() async {
-    const String apiUrl = 'http://localhost:8000/users';
+    const String apiUrl = 'http://$ip/users';
 
     final response = await http.post(
       Uri.parse(apiUrl),
