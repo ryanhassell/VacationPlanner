@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
 class ViewGroupsPage extends StatelessWidget {
-  final int uid;
+  final String uid;
 
   const ViewGroupsPage({super.key, required this.uid});
 
-  Future<List<String>> fetchUserGroups(int uid) async {
+  Future<List<String>> fetchUserGroups(String uid) async {
     // This function is a placeholder to simulate fetching groups based on user ID.
     // Replace with real API calls or data fetching logic
     return ['Group 1', 'Group 2', 'Group 3']; // Example groups

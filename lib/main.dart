@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
-import 'home_page.dart';  // Import your actual HomePage class
+import 'package:vacation_planner/firebase_options.dart';
+import 'home_page.dart';
+import 'package:firebase_core/firebase_core.dart';
 
-void main() {
-  runApp(const VacationPlannerApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  runApp(VacationPlannerApp());
 }
+
 
 class VacationPlannerApp extends StatelessWidget {
   const VacationPlannerApp({super.key});
@@ -16,7 +21,7 @@ class VacationPlannerApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.yellow),
         useMaterial3: true,
       ),
-      home: const HomePage(uid:-1), // Use the actual home page
+      home: const HomePage(uid: "No Active Account"), // Use the actual home page
     );
   }
 }
