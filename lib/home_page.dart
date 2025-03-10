@@ -4,12 +4,14 @@ import 'login_page.dart';
 import 'create_group_page.dart';
 import 'view_groups_page.dart';
 import 'profile_info_page.dart';
+import 'trip_page.dart'; // Import the new trip page
 
 class HomePage extends StatelessWidget {
   final String uid;
 
   const HomePage({super.key, required this.uid});
 
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -68,6 +70,24 @@ class HomePage extends StatelessWidget {
                 );
               },
               child: const Text('Profile Info'),
+            ),
+            const SizedBox(height: 10),
+            // New button to navigate to the Trip page
+            ElevatedButton(
+              onPressed: () {
+                // For demonstration, we use sample values: group id = 1 and sample coordinates.
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const TripPage(
+                      group: 1,
+                      userLat: 37.7749,
+                      userLong: -122.4194,
+                    ),
+                  ),
+                );
+              },
+              child: const Text('Generate Trip'),
             ),
           ],
         ),

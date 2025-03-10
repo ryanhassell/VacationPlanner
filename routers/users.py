@@ -5,7 +5,6 @@ from app.global_vars import DB_HOST, DB_NAME, DB_PASSWORD, DB_USERNAME, FB_ACC_P
 from fastapi import FastAPI, HTTPException, Depends, APIRouter
 from app.models import Base, User, Group
 from schemas.user import UserResponse, UserCreate, UserUpdate, UserChangePassword
-import re
 import firebase_admin # this error is here for some reason but still works idk
 from firebase_admin import auth, credentials #same here no idea
 

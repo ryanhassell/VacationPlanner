@@ -37,6 +37,13 @@ class Group(Base):
     location_long = Column(Double)
     group_type = Column(Enum(GroupTypeEnum, name="group_type"))
 
+class Trip(Base):
+    __tablename__ = "trips"
+    tid = Column(Integer, primary_key=True, index=True)
+    group = Column(Integer)
+    location_lat = Column(Double)
+    location_long = Column(Double)
+
 ##class Random(Base):
 
 ##class Planned(Base):
