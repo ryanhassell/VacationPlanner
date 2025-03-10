@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import 'global_vars.dart';
 
 class CreateUserPage extends StatefulWidget {
-  const CreateUserPage({super.key});
+  const CreateUserPage({Key? key}) : super(key: key);
 
   @override
   _CreateUserPageState createState() => _CreateUserPageState();
@@ -62,29 +63,49 @@ class _CreateUserPageState extends State<CreateUserPage> {
       return;
     }
 
-    const String apiUrl = 'http://$ip/users';
-
-    final response = await http.post(
-      Uri.parse(apiUrl),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'first_name': _firstNameController.text,
-        'last_name': _lastNameController.text,
-        'email_address': _emailController.text,
-        'phone_number': formattedPhone,
-        'password': _passwordController.text,
-        'groups': []
-      }),
-    );
-
-    if (response.statusCode == 200) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('User created successfully!')),
+    try {
+      // 1. Create the user in Firebase Auth (password handled by Firebase)
+      UserCredential userCredential =
+      await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: _emailController.text,
+        password: _passwordController.text,
       );
-      Navigator.pop(context);
-    } else {
+
+      // Optionally update the display name
+      await userCredential.user?.updateDisplayName(
+          '${_firstNameController.text} ${_lastNameController.text}');
+
+      // 2. Send additional user data to your FastAPI backend (no password)
+      final String apiUrl = 'http://$ip/users';
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'first_name': _firstNameController.text,
+          'last_name': _lastNameController.text,
+          'email_address': _emailController.text,
+          'phone_number': formattedPhone,
+          'groups': []
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('User created/updated successfully!')),
+        );
+        Navigator.pop(context);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Backend Error: ${response.body}')),
+        );
+      }
+    } on FirebaseAuthException catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: ${response.body}')),
+        SnackBar(content: Text('Firebase Auth Error: ${e.message}')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
       );
     }
   }
@@ -97,7 +118,6 @@ class _CreateUserPageState extends State<CreateUserPage> {
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               TextField(
                 controller: _firstNameController,
@@ -124,8 +144,7 @@ class _CreateUserPageState extends State<CreateUserPage> {
                 keyboardType: TextInputType.emailAddress,
               ),
               const SizedBox(height: 10),
-
-              // Segmented Phone Number Input
+              // Segmented phone number input
               Row(
                 children: [
                   Container(
@@ -148,7 +167,11 @@ class _CreateUserPageState extends State<CreateUserPage> {
                       keyboardType: TextInputType.number,
                       maxLength: 3,
                       textAlign: TextAlign.center,
-                      buildCounter: (context, {int? currentLength, bool? isFocused, int? maxLength}) => null,
+                      buildCounter: (context,
+                          {int? currentLength,
+                            bool? isFocused,
+                            int? maxLength}) =>
+                      null,
                       onChanged: (value) {
                         if (value.length == 3) {
                           FocusScope.of(context).requestFocus(_prefixFocusNode);
@@ -167,7 +190,11 @@ class _CreateUserPageState extends State<CreateUserPage> {
                       keyboardType: TextInputType.number,
                       maxLength: 3,
                       textAlign: TextAlign.center,
-                      buildCounter: (context, {int? currentLength, bool? isFocused, int? maxLength}) => null,
+                      buildCounter: (context,
+                          {int? currentLength,
+                            bool? isFocused,
+                            int? maxLength}) =>
+                      null,
                       onChanged: (value) {
                         if (value.length == 3) {
                           FocusScope.of(context).requestFocus(_lineNumberFocusNode);
@@ -186,12 +213,15 @@ class _CreateUserPageState extends State<CreateUserPage> {
                       keyboardType: TextInputType.number,
                       maxLength: 4,
                       textAlign: TextAlign.center,
-                      buildCounter: (context, {int? currentLength, bool? isFocused, int? maxLength}) => null,
+                      buildCounter: (context,
+                          {int? currentLength,
+                            bool? isFocused,
+                            int? maxLength}) =>
+                      null,
                     ),
                   ),
                 ],
               ),
-
               const SizedBox(height: 10),
               TextField(
                 controller: _passwordController,

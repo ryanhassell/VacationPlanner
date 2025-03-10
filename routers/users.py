@@ -56,13 +56,9 @@ async def create_user(user: UserCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Email already exists.")
 
     try:
-        formatted_phone = format_phone_number(user.phone_number) if user.phone_number else None
-
         # Step 1: Create Firebase User FIRST
-        firebase_user = auth.create_user(
-            email=user.email_address,
-            display_name=f"{user.first_name} {user.last_name}",
-            phone_number=formatted_phone
+        firebase_user = auth.get_user_by_email(
+            email=user.email_address
         )
 
         firebase_uid = firebase_user.uid  # Use Firebase UID as UID
