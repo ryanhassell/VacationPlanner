@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from app.global_vars import DB_HOST, DB_NAME, DB_PASSWORD, DB_USERNAME
+from app.global_vars import DB_HOST, DB_NAME, DB_PASSWORD, DB_USERNAME, FB_ACC_PATH
 from fastapi import FastAPI, HTTPException, Depends, APIRouter
 from app.models import Base, User, Group
 from schemas.user import UserResponse, UserCreate, UserUpdate, UserChangePassword
@@ -11,7 +11,7 @@ from firebase_admin import auth, credentials #same here no idea
 
 # Firebase Admin SDK Initialization
 if not firebase_admin._apps:
-    cred = credentials.Certificate("C:/Users/ryanh/Downloads/vacation-698a8-firebase-adminsdk-fbsvc-61dc104cf9.json")
+    cred = credentials.Certificate(FB_ACC_PATH)
     firebase_admin.initialize_app(cred)
 
 # Define database connection string
@@ -33,21 +33,14 @@ def get_db():
         db.close()
 
 
-def format_phone_number(phone: str) -> str:
-    """Sanitize and convert a phone number to E.164 format."""
-    if not phone:
-        return None  # Firebase allows users without phone numbers
+@router.get("/{uid}", response_model=UserResponse)
+async def get_user(uid: str, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.uid == uid).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
 
-    # Remove any non-numeric characters except '+'
-    phone = re.sub(r"[^\d+]", "", phone)
 
-    # Ensure it starts with a '+'
-    if not phone.startswith("+"):
-        raise ValueError("Phone number must be in E.164 format (e.g., +16108362991)")
-
-    return phone
-#consider deleting bc I changed the input in create account to not need this
-#future me problem
 
 @router.post("", response_model=UserResponse)
 async def create_user(user: UserCreate, db: Session = Depends(get_db)):
