@@ -30,7 +30,7 @@ class Group(Base):
     __tablename__ = "groups"
     gid = Column(Integer, primary_key=True, index=True)
     members = Column(ARRAY(Integer))
-    owner = Column(Integer)
+    owner = Column(String)
     admin = Column(ARRAY(Integer))
     group_name = Column(String)
     location_lat = Column(Double)
