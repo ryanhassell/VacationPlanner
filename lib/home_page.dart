@@ -44,7 +44,7 @@ class HomePage extends StatelessWidget {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const CreateGroupPage()),
+                  MaterialPageRoute(builder: (context) => CreateGroupPage(uid: uid)),
                 );
               },
               child: const Text('Create Group'),

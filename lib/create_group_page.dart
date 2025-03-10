@@ -5,7 +5,8 @@ import 'dart:convert';
 import 'global_vars.dart';
 
 class CreateGroupPage extends StatefulWidget {
-  const CreateGroupPage({super.key});
+  final String uid;
+  const CreateGroupPage({super.key, required this.uid});
 
   @override
   _CreateGroupPageState createState() => _CreateGroupPageState();
@@ -13,7 +14,6 @@ class CreateGroupPage extends StatefulWidget {
 
 class _CreateGroupPageState extends State<CreateGroupPage> {
   final TextEditingController _groupNameController = TextEditingController();
-  final TextEditingController _userIdController = TextEditingController();
   final TextEditingController _longitudeController = TextEditingController();
   final TextEditingController _latitudeController = TextEditingController();
   String _selectedGroupType = 'Planned';
@@ -26,7 +26,7 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
       Uri.parse(apiUrl),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
-        'owner': _userIdController.text,
+        'owner': widget.uid,
         'group_name': _groupNameController.text,
         'location_long': _longitudeController.text,
         'location_lat': _latitudeController.text,
@@ -57,14 +57,6 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            TextField(
-              controller: _userIdController,
-              decoration: InputDecoration(
-                labelText: 'User ID',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 10),
             TextField(
               controller: _groupNameController,
               decoration: InputDecoration(
