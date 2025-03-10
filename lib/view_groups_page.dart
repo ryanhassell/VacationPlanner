@@ -1,23 +1,31 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:vacation_planner/global_vars.dart';
 
 class ViewGroupsPage extends StatelessWidget {
   final String uid;
 
   const ViewGroupsPage({super.key, required this.uid});
 
-  Future<List<String>> fetchUserGroups(String uid) async {
-    // This function is a placeholder to simulate fetching groups based on user ID.
-    // Replace with real API calls or data fetching logic
-    return ['Group 1', 'Group 2', 'Group 3']; // Example groups
+  Future<List<Map<String, dynamic>>> fetchUserGroups(String uid) async {
+    final url = Uri.parse('http://$ip/groups/identify/$uid'); // Replace with your actual FastAPI URL
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body);
+      return data.cast<Map<String, dynamic>>();  // Directly return list of maps
+    }   else {
+      throw Exception('Failed to load user groups');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text("Your Groups"),
-      ),
-      body: FutureBuilder<List<String>>(
+      appBar: AppBar(title: Text("Your Groups")),
+      body: FutureBuilder<List<Map<String, dynamic>>>(
         future: fetchUserGroups(uid),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -32,13 +40,13 @@ class ViewGroupsPage extends StatelessWidget {
             return Center(child: Text('No groups available'));
           }
 
-          List<String> groups = snapshot.data!;
+          List<Map<String, dynamic>> groups = snapshot.data!;
 
           return Padding(
             padding: const EdgeInsets.all(16.0),
             child: GridView.builder(
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2, // Two bubbles per row
+                crossAxisCount: 2,
                 crossAxisSpacing: 16.0,
                 mainAxisSpacing: 16.0,
               ),
@@ -46,11 +54,12 @@ class ViewGroupsPage extends StatelessWidget {
               itemBuilder: (context, index) {
                 return GestureDetector(
                   onTap: () {
-                    // Handle group tap, possibly navigate to a group details page
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Tapped on ${groups[index]}')));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Tapped on ${groups[index]["group_name"]}')),
+                    );
                   },
                   child: Chip(
-                    label: Text(groups[index]),
+                    label: Text(groups[index]["group_name"]),  // ✅ Directly access group_name
                     backgroundColor: Colors.blueAccent,
                     padding: EdgeInsets.symmetric(vertical: 10.0, horizontal: 15.0),
                     labelStyle: TextStyle(
