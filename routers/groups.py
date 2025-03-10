@@ -4,7 +4,7 @@ from sqlalchemy.orm import sessionmaker
 from app.global_vars import DB_HOST, DB_NAME, DB_PASSWORD, DB_USERNAME
 from fastapi import FastAPI, HTTPException, Depends, APIRouter
 from app.models import Base, Group
-from schemas.group import GroupResponse, GroupCreate, GroupUpdate
+from schemas.group import GroupResponse, GroupCreate, GroupUpdate, IDGroupResponse
 
 # Define your connection string
 conn_string = f"postgresql://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}"
@@ -48,8 +48,13 @@ async def list_users_by_gid(gid: int, db: Session = Depends(get_db)):
 
 @router.get("/groups/{uid}", response_model=list[GroupResponse])
 async def get_groups_by_uid(uid: str, db: Session = Depends(get_db)):
-    groups = db.query(Group).filter(Group.uid == uid).all()
+    groups = db.query(Group).filter(Group.owner == uid).all()
     return groups
+
+@router.get("/identify/{uid}", response_model=list[IDGroupResponse])
+async def groups_gid_by_uid(uid: str, db: Session = Depends(get_db)):
+    groups = db.query(Group.gid, Group.group_name).filter(Group.owner == uid).all()
+    return [{"gid": g[0], "group_name": g[1]} for g in groups]
 
 @router.post("", response_model=GroupCreate)
 async def create_group(group: GroupCreate, db: Session = Depends(get_db)):

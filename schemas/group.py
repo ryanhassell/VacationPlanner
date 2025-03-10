@@ -36,3 +36,7 @@ class GroupUpdate(BaseModel):
     location_lat: float
     location_long: float
     group_type: GroupTypeEnum
+
+class IDGroupResponse(BaseModel):
+    gid: int
+    group_name: str
