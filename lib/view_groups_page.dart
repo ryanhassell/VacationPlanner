@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:vacation_planner/global_vars.dart';
 
+import 'group_manage_page.dart';
+
 class ViewGroupsPage extends StatelessWidget {
   final String uid;
 
@@ -54,8 +56,15 @@ class ViewGroupsPage extends StatelessWidget {
               itemBuilder: (context, index) {
                 return GestureDetector(
                   onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Tapped on ${groups[index]["group_name"]}')),
+                    // Navigate to GroupManagePage with uid and gid
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => GroupManagePage(
+                          uid: uid,
+                          gid: groups[index]["gid"],  // ✅ Pass group ID
+                        ),
+                      ),
                     );
                   },
                   child: Chip(
