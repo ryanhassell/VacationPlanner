@@ -40,3 +40,11 @@ class GroupUpdate(BaseModel):
 class IDGroupResponse(BaseModel):
     gid: int
     group_name: str
+
+class TempGroupResponse(BaseModel):
+    gid: int
+    owner: str
+    group_name: str
+    location_lat: float
+    location_long: float
+    group_type: GroupTypeEnum
