@@ -21,6 +21,9 @@ class _CreateUserPageState extends State<CreateUserPage> {
   final TextEditingController _lineNumberController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
+  // NEW: Controller for profile image URL
+  final TextEditingController _profileImageURLController = TextEditingController();
+
   final FocusNode _prefixFocusNode = FocusNode();
   final FocusNode _lineNumberFocusNode = FocusNode();
 
@@ -64,7 +67,7 @@ class _CreateUserPageState extends State<CreateUserPage> {
     }
 
     try {
-      // 1. Create the user in Firebase Auth (password handled by Firebase)
+      // 1. Create the user in Firebase Auth
       UserCredential userCredential =
       await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: _emailController.text,
@@ -75,7 +78,7 @@ class _CreateUserPageState extends State<CreateUserPage> {
       await userCredential.user?.updateDisplayName(
           '${_firstNameController.text} ${_lastNameController.text}');
 
-      // 2. Send additional user data to your FastAPI backend (no password)
+      // 2. Send additional user data to your FastAPI backend
       final String apiUrl = 'http://$ip/users';
       final response = await http.post(
         Uri.parse(apiUrl),
@@ -85,7 +88,11 @@ class _CreateUserPageState extends State<CreateUserPage> {
           'last_name': _lastNameController.text,
           'email_address': _emailController.text,
           'phone_number': formattedPhone,
-          'groups': []
+          'groups': [], // or any relevant data
+          // IMPORTANT: Include profile_image_url (even if empty).
+          'profile_image_url': _profileImageURLController.text.isEmpty
+              ? ""
+              : _profileImageURLController.text,
         }),
       );
 
@@ -228,6 +235,15 @@ class _CreateUserPageState extends State<CreateUserPage> {
                 obscureText: true,
                 decoration: const InputDecoration(
                   labelText: 'Password',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 10),
+              // NEW: Profile Image URL Field
+              TextField(
+                controller: _profileImageURLController,
+                decoration: const InputDecoration(
+                  labelText: 'Profile Image URL',
                   border: OutlineInputBorder(),
                 ),
               ),

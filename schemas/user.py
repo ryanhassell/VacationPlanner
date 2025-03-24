@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from pydantic import BaseModel
 
@@ -11,8 +11,10 @@ class UserResponse(BaseModel):
     phone_number: str
     # user_type: Enum
     groups: List[int]
+    profile_image_url: Optional[str]
 
-    class Config:
+
+class Config:
         arbitrary_types_allowed = True
 
 
@@ -23,6 +25,7 @@ class UserCreate(BaseModel):
     phone_number: str
     # user_type: Enum
     groups: List[int]
+    profile_image_url: Optional[str]
 
 
 class UserUpdate(BaseModel):
@@ -32,6 +35,7 @@ class UserUpdate(BaseModel):
     phone_number: str
     # user_type: Enum
     groups: List[int]
+    profile_image_url: Optional[str]
 
 from pydantic import BaseModel
 

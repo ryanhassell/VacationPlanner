@@ -24,7 +24,8 @@ class User(Base):
     last_name = Column(String)
     email_address = Column(String)
     phone_number = Column(String)
-    groups= Column(ARRAY(Integer))
+    groups = Column(ARRAY(Integer))
+    profile_image_url = Column(String)
 
 class Group(Base):
     __tablename__ = "groups"

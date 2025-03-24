@@ -40,7 +40,6 @@ async def get_user(uid: str, db: Session = Depends(get_db)):
     return user
 
 
-
 @router.post("", response_model=UserResponse)
 async def create_user(user: UserCreate, db: Session = Depends(get_db)):
     existing_user = db.query(User).filter(User.email_address == user.email_address).first()
@@ -63,7 +62,7 @@ async def create_user(user: UserCreate, db: Session = Depends(get_db)):
             last_name=user.last_name,
             email_address=user.email_address,
             phone_number=user.phone_number,
-            groups=user.groups
+            groups=user.groups,
         )
         db.add(new_user)
         db.commit()
@@ -86,9 +85,9 @@ async def delete_user(uid: int, db: Session = Depends(get_db)):
 
     try:
         # Delete user from Firebase
-        if user_to_delete.firebase_uid:
-            auth.delete_user(user_to_delete.firebase_uid)
-            print(f"Firebase user {user_to_delete.firebase_uid} deleted.")
+        if user_to_delete.uid:
+            auth.delete_user(user_to_delete.uid)
+            print(f"Firebase user {user_to_delete.uid} deleted.")
 
         # Delete the user from PostgreSQL
         db.delete(user_to_delete)
@@ -102,7 +101,7 @@ async def delete_user(uid: int, db: Session = Depends(get_db)):
 
 
 @router.put("/{uid}", response_model=UserResponse)
-async def update_user(uid: int, user_data: UserUpdate, db: Session = Depends(get_db)):
+async def update_user(uid: str, user_data: UserUpdate, db: Session = Depends(get_db)):
     user_to_update = db.query(User).filter(User.uid == uid).first()
 
     if not user_to_update:
@@ -111,12 +110,12 @@ async def update_user(uid: int, user_data: UserUpdate, db: Session = Depends(get
     try:
         # Update user in Firebase Auth
         auth.update_user(
-            user_to_update.firebase_uid,
+            user_to_update.uid,
             email=user_data.email_address if user_data.email_address else user_to_update.email_address,
             phone_number=user_data.phone_number if user_data.phone_number else user_to_update.phone_number,
             display_name=f"{user_data.first_name} {user_data.last_name}" if user_data.first_name and user_data.last_name else None
         )
-        print(f"Firebase user {user_to_update.firebase_uid} updated.")
+        print(f"Firebase user {user_to_update.uid} updated.")
 
         # Update user in PostgreSQL
         for field, value in user_data.dict().items():
@@ -170,7 +169,7 @@ async def reset_password(email: str, user_data: UserChangePassword, db: Session 
 
     try:
         # Update password in Firebase Authentication
-        auth.update_user(user_to_update.firebase_uid, password=user_data.new_password)
+        auth.update_user(user_to_update.uid, password=user_data.new_password)
         print(f"Firebase password updated for {email}")
 
         # Update password in PostgreSQL

@@ -1,5 +1,4 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -28,13 +27,14 @@ class _ProfileInfoPageState extends State<ProfileInfoPage> {
   Future<Map<String, dynamic>> _fetchUserData() async {
     final response = await http.get(Uri.parse("http://$ip/users/${widget.uid}"));
     if (response.statusCode == 200) {
-      return jsonDecode(response.body);
+      return json.decode(response.body) as Map<String, dynamic>;
     } else {
       throw Exception("Failed to fetch user data");
     }
   }
 
-  // Load profile picture from Firebase Storage
+  // Load profile picture from Firebase Storage (if you want to show direct from Storage).
+  // But usually you’ll rely on the DB's 'profile_image_url' for consistency.
   Future<void> _loadProfileImage() async {
     try {
       final ref = FirebaseStorage.instance
@@ -45,34 +45,67 @@ class _ProfileInfoPageState extends State<ProfileInfoPage> {
         profileImageUrl = url;
       });
     } catch (e) {
-      print("No profile image found: $e");
+      print("No profile image found in Firebase Storage: $e");
     }
   }
 
-  // Let the user pick and upload a new profile picture
+  // Update the user's profile_image_url in your backend (PUT /users/{uid})
+  Future<void> _updateUserProfileImageUrl(String newUrl) async {
+    try {
+      final apiUrl = "http://$ip/users/${widget.uid}";
+      // You must also include required fields, such as 'groups', if your server needs them.
+      final Map<String, dynamic> body = {
+        "profile_image_url": newUrl,
+        "groups": [], // or pass the user's current groups if required
+      };
+      final response = await http.put(
+        Uri.parse(apiUrl),
+        headers: {"Content-Type": "application/json"},
+        body: json.encode(body),
+      );
+
+      if (response.statusCode == 200) {
+        print("Profile image URL updated in DB.");
+      } else {
+        print("Error updating profile in DB: ${response.body}");
+      }
+    } catch (e) {
+      print("Exception updating profile in DB: $e");
+    }
+  }
+
+  // Let the user pick and upload a new profile picture to Firebase Storage
+  // and update your backend with the new URL.
   Future<void> _pickAndUploadImage() async {
     final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
     if (pickedFile == null) return;
+
     setState(() {
       _isUploading = true;
     });
-    final file = File(pickedFile.path);
+
     try {
+      final file = File(pickedFile.path);
       final ref = FirebaseStorage.instance
           .ref()
           .child("profile_pictures/${widget.uid}.jpg");
       await ref.putFile(file);
+
       final url = await ref.getDownloadURL();
       setState(() {
         profileImageUrl = url;
       });
+
+      // Update the DB with the new profile_image_url
+      await _updateUserProfileImageUrl(url);
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Profile picture updated!")),
+        const SnackBar(content: Text("Profile picture updated!")),
       );
     } catch (e) {
       print("Error uploading image: $e");
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Failed to upload image.")),
+        const SnackBar(content: Text("Failed to upload image.")),
       );
     } finally {
       setState(() {
@@ -106,9 +139,9 @@ class _ProfileInfoPageState extends State<ProfileInfoPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Profile Information"),
+        title: const Text("Profile Information"),
         leading: IconButton(
-          icon: Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back),
           onPressed: () {
             Navigator.pushReplacement(
               context,
@@ -121,22 +154,28 @@ class _ProfileInfoPageState extends State<ProfileInfoPage> {
         future: _fetchUserData(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
+            return const Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError) {
             return Center(child: Text("Error: ${snapshot.error}"));
           }
           if (!snapshot.hasData) {
-            return Center(child: Text("User data not found."));
+            return const Center(child: Text("User data not found."));
           }
 
           final data = snapshot.data!;
           final firstName = data['first_name'] ?? '';
           final lastName = data['last_name'] ?? '';
           final email = data['email_address'] ?? '';
+          final profileUrlFromDb = data['profile_image_url'] ?? '';
+
+          // Decide what to show in the CircleAvatar:
+          //   1. The newly uploaded `profileImageUrl` if we have it in local state
+          //   2. Otherwise, fallback to the DB's `profileUrlFromDb`
+          final effectiveProfileUrl = profileImageUrl ?? profileUrlFromDb;
 
           return SingleChildScrollView(
-            padding: EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
@@ -149,44 +188,44 @@ class _ProfileInfoPageState extends State<ProfileInfoPage> {
                       CircleAvatar(
                         radius: 60,
                         backgroundColor: Colors.grey[300],
-                        backgroundImage: profileImageUrl != null
-                            ? NetworkImage(profileImageUrl!)
+                        backgroundImage: effectiveProfileUrl.isNotEmpty
+                            ? NetworkImage(effectiveProfileUrl)
                             : null,
-                        child: profileImageUrl == null
-                            ? Icon(Icons.person, size: 60, color: Colors.white)
+                        child: effectiveProfileUrl.isEmpty
+                            ? const Icon(Icons.person, size: 60, color: Colors.white)
                             : null,
                       ),
-                      if (_isUploading) CircularProgressIndicator(),
+                      if (_isUploading) const CircularProgressIndicator(),
                     ],
                   ),
                 ),
-                SizedBox(height: 20),
+                const SizedBox(height: 20),
                 // User Details
                 Text(
                   "$firstName $lastName",
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
-                SizedBox(height: 8),
+                const SizedBox(height: 8),
                 Text(
                   email,
                   style: TextStyle(fontSize: 16, color: Colors.grey[700]),
                 ),
-                SizedBox(height: 30),
+                const SizedBox(height: 30),
                 // Action Buttons
                 ElevatedButton(
                   onPressed: _changePassword,
                   style: ElevatedButton.styleFrom(
-                    minimumSize: Size(double.infinity, 48),
+                    minimumSize: const Size(double.infinity, 48),
                   ),
-                  child: Text("Change Password"),
+                  child: const Text("Change Password"),
                 ),
-                SizedBox(height: 16),
+                const SizedBox(height: 16),
                 ElevatedButton(
                   onPressed: _editProfile,
                   style: ElevatedButton.styleFrom(
-                    minimumSize: Size(double.infinity, 48),
+                    minimumSize: const Size(double.infinity, 48),
                   ),
-                  child: Text("Edit Profile"),
+                  child: const Text("Edit Profile"),
                 ),
               ],
             ),

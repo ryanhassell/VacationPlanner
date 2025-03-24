@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
 import 'global_vars.dart';
 import 'home_page.dart';
@@ -27,9 +28,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   // Stock images for profile picture selection
   final List<String> _stockImages = [
-    "https://example.com/stock1.jpg",
-    "https://example.com/stock2.jpg",
-    "https://example.com/stock3.jpg",
+    "https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/Outdoors-man-portrait_%28cropped%29.jpg/1200px-Outdoors-man-portrait_%28cropped%29.jpg",
+    "https://variety.com/wp-content/uploads/2024/06/5N7A0541-e1718042484447.jpg",
+    "https://images.pexels.com/photos/2379005/pexels-photo-2379005.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500",
   ];
 
   Future<Map<String, dynamic>> _fetchUserData() async {
@@ -53,6 +54,19 @@ class _EditProfilePageState extends State<EditProfilePage> {
     }
   }
 
+  // Update Firebase Auth user profile with new photoURL
+  Future<void> _updateFirebaseUserProfile(String url) async {
+    try {
+      User? user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        await user.updateProfile(photoURL: url);
+        await user.reload();
+      }
+    } catch (e) {
+      print("Error updating Firebase Auth profile: $e");
+    }
+  }
+
   Future<void> _pickImageFromGallery() async {
     final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
     if (pickedFile == null) return;
@@ -67,6 +81,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
       setState(() {
         _profileImageUrl = url;
       });
+      // Update Firebase Auth profile with new photoURL.
+      await _updateFirebaseUserProfile(url);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Profile picture updated!")),
       );
@@ -118,10 +134,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   itemBuilder: (context, index) {
                     final stockUrl = _stockImages[index];
                     return GestureDetector(
-                      onTap: () {
+                      onTap: () async {
                         setState(() {
                           _profileImageUrl = stockUrl;
                         });
+                        // Optionally update the Firebase Auth profile with the stock image URL.
+                        await _updateFirebaseUserProfile(stockUrl);
                         Navigator.pop(context);
                       },
                       child: Image.network(stockUrl, fit: BoxFit.cover),
@@ -152,7 +170,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
       "phone_number": _phoneController.text.isNotEmpty
           ? _phoneController.text
           : currentData['phone_number'],
-      "profile_image_url": _profileImageUrl ?? currentData['profile_image_url'] ?? ""
+      "profile_image_url": _profileImageUrl ?? currentData['profile_image_url'] ?? "",
+
+      "groups": currentData['groups'] ?? [],
     };
 
     try {
@@ -177,6 +197,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
         const SnackBar(content: Text("Failed to update profile.")),
       );
     }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfileImage();
   }
 
   @override
