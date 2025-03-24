@@ -19,37 +19,20 @@ class _GroupManagePageState extends State<GroupManagePage> {
   Map<String, dynamic>? groupData;
   bool isLoading = true;
   String? errorMessage;
-  MapboxMapController? mapController; // Mapbox controller
-  LatLng? mapLocation; // Stores the LatLng based on fetched data
+
+  late MapboxMapController mapController; // Mapbox controller for controlling the map
+  LatLng? mapLocation; // Store the LatLng based on fetched data
 
   Future<void> fetchGroupDetails() async {
     try {
       final response = await http.get(Uri.parse('http://$ip/groups/get/${widget.gid}'));
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        print("Fetched group data: $data");
-
         setState(() {
-          groupData = data;
-
-          double? lat = (data['location_lat'] as num?)?.toDouble();
-          double? long = (data['location_long'] as num?)?.toDouble();
-
-          if (lat != null && long != null) {
-            mapLocation = LatLng(lat, long);
-            print("Map location set: $mapLocation");
-          }
-
+          groupData = jsonDecode(response.body);
+          mapLocation = LatLng(groupData!['location_lat'], groupData!['location_long']);
           isLoading = false;
         });
-
-        // If the map is already created, update the camera position
-        if (mapController != null && mapLocation != null) {
-          mapController!.animateCamera(CameraUpdate.newLatLng(mapLocation!));
-          _addMarker();
-        }
-
       } else {
         setState(() {
           errorMessage = 'Failed to load group details';
@@ -64,18 +47,8 @@ class _GroupManagePageState extends State<GroupManagePage> {
     }
   }
 
-  void _addMarker() {
-    if (mapController != null && mapLocation != null) {
-      // Add marker if mapController and mapLocation are both non-null
-      mapController!.addSymbol(SymbolOptions(
-        geometry: mapLocation!,
-        iconImage: "marker-15", // Uses a built-in Mapbox marker
-        iconSize: 1.5,
-      ));
-      print("Marker added at: ${mapLocation!.latitude}, ${mapLocation!.longitude}");
-    } else {
-      print("Failed to add marker: mapController or mapLocation is null");
-    }
+  void _onMapCreated(MapboxMapController controller) {
+    mapController = controller;
   }
 
   @override
@@ -109,33 +82,22 @@ class _GroupManagePageState extends State<GroupManagePage> {
             Text("Longitude: ${groupData!['location_long']}"),
             const SizedBox(height: 20),
 
-            // Display the Mapbox map if mapLocation is available
-            mapLocation != null
-                ? Container(
+            // Hardcoded Mapbox Map (San Francisco)
+            SizedBox(
               height: 300,
               child: MapboxMap(
-                accessToken: "sk.eyJ1IjoiY2hlZXNlZnJpZXMiLCJhIjoiY204bW55bWQ3MWp2aDJrcHgyaTltazI3aSJ9.5qZSf6JCMv1VWyB_lp5tFg", // Your Mapbox access token here
-                initialCameraPosition: CameraPosition(
-                  target: mapLocation!,
-                  zoom: 14.0,
+                accessToken: "sk.eyJ1IjoiY2hlZXNlZnJpZXMiLCJhIjoiY204bmJjc2toMDBnMjJ5cHpkaWQ0aWVldSJ9.j3l4E43PL3P1MKT_KtjUTw", // Replace with your actual Mapbox token
+                initialCameraPosition: const CameraPosition(
+                  target: LatLng(37.7749, -122.4194), // San Francisco
+                  zoom: 10.0,
                 ),
-                onMapCreated: (MapboxMapController controller) {
-                  setState(() {
-                    mapController = controller;
-                  });
-
-                  print("Map created. Updating camera position...");
-                  if (mapLocation != null) {
-                    mapController!.animateCamera(CameraUpdate.newLatLng(mapLocation!));
-                    _addMarker();
-                  }
-                },
+                onMapCreated: _onMapCreated,
               ),
-            )
-                : const Center(child: CircularProgressIndicator()),
+            ),
           ],
         ),
       ),
     );
   }
 }
+
