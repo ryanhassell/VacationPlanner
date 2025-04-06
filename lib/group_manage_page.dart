@@ -24,7 +24,8 @@ class _GroupManagePageState extends State<GroupManagePage> {
 
   Future<void> fetchGroupDetails() async {
     try {
-      final response = await http.get(Uri.parse('http://$ip/groups/get/${widget.gid}'));
+      final response =
+      await http.get(Uri.parse('http://$ip/groups/get/${widget.gid}'));
 
       if (response.statusCode == 200) {
         setState(() {
@@ -70,7 +71,8 @@ class _GroupManagePageState extends State<GroupManagePage> {
           children: [
             Text(
               "Group Name: ${groupData!['group_name']}",
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                  fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
             Text("Owner: ${groupData!['owner']}"),
@@ -79,14 +81,19 @@ class _GroupManagePageState extends State<GroupManagePage> {
             Text("Latitude: ${groupData!['location_lat']}"),
             Text("Longitude: ${groupData!['location_long']}"),
             const SizedBox(height: 20),
-
-            // Hardcoded Mapbox Map (San Francisco)
+            // Mapbox Map using the provided latitude and longitude
             SizedBox(
               height: 300,
               child: MapboxMap(
-                accessToken: "sk.eyJ1IjoiY2hlZXNlZnJpZXMiLCJhIjoiY204bmJjc2toMDBnMjJ5cHpkaWQ0aWVldSJ9.j3l4E43PL3P1MKT_KtjUTw", // Replace with your actual Mapbox token
-                initialCameraPosition: const CameraPosition(
-                  target: LatLng(37.7749, -122.4194), // San Francisco
+                accessToken:
+                "sk.eyJ1IjoiY2hlZXNlZnJpZXMiLCJhIjoiY204bmJjc2toMDBnMjJ5cHpkaWQ0aWVldSJ9.j3l4E43PL3P1MKT_KtjUTw", // Replace with your actual Mapbox token
+                initialCameraPosition: CameraPosition(
+                  target: LatLng(
+                    double.parse(
+                        groupData!['location_lat'].toString()),
+                    double.parse(
+                        groupData!['location_long'].toString()),
+                  ),
                   zoom: 10.0,
                 ),
                 onMapCreated: _onMapCreated,
