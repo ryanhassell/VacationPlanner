@@ -4,9 +4,9 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
-
+import 'package:firebase_auth/firebase_auth.dart';
+import 'login_page.dart';
 import 'home_page.dart';
-import 'edit_profile_page.dart'; // Make sure you have this page implemented
 import 'global_vars.dart';
 
 class ProfileInfoPage extends StatefulWidget {
@@ -25,7 +25,8 @@ class _ProfileInfoPageState extends State<ProfileInfoPage> {
 
   // Fetch user data from your backend (Postgres)
   Future<Map<String, dynamic>> _fetchUserData() async {
-    final response = await http.get(Uri.parse("http://$ip/users/${widget.uid}"));
+    final response =
+    await http.get(Uri.parse("http://$ip/users/${widget.uid}"));
     if (response.statusCode == 200) {
       return json.decode(response.body) as Map<String, dynamic>;
     } else {
@@ -33,8 +34,7 @@ class _ProfileInfoPageState extends State<ProfileInfoPage> {
     }
   }
 
-  // Load profile picture from Firebase Storage (if you want to show direct from Storage).
-  // But usually you’ll rely on the DB's 'profile_image_url' for consistency.
+  // Load profile picture from Firebase Storage.
   Future<void> _loadProfileImage() async {
     try {
       final ref = FirebaseStorage.instance
@@ -53,10 +53,10 @@ class _ProfileInfoPageState extends State<ProfileInfoPage> {
   Future<void> _updateUserProfileImageUrl(String newUrl) async {
     try {
       final apiUrl = "http://$ip/users/${widget.uid}";
-      // You must also include required fields, such as 'groups', if your server needs them.
+      // Include required fields (e.g. 'groups') if your server requires them.
       final Map<String, dynamic> body = {
         "profile_image_url": newUrl,
-        "groups": [], // or pass the user's current groups if required
+        "groups": [] // or pass the user's current groups if required
       };
       final response = await http.put(
         Uri.parse(apiUrl),
@@ -74,7 +74,7 @@ class _ProfileInfoPageState extends State<ProfileInfoPage> {
     }
   }
 
-  // Let the user pick and upload a new profile picture to Firebase Storage
+  // Let the user pick and upload a new profile picture to Firebase Storage,
   // and update your backend with the new URL.
   Future<void> _pickAndUploadImage() async {
     final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
@@ -96,7 +96,7 @@ class _ProfileInfoPageState extends State<ProfileInfoPage> {
         profileImageUrl = url;
       });
 
-      // Update the DB with the new profile_image_url
+      // Update the DB with the new profile_image_url.
       await _updateUserProfileImageUrl(url);
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -119,13 +119,13 @@ class _ProfileInfoPageState extends State<ProfileInfoPage> {
     print("Change Password button pressed");
   }
 
-  void _editProfile() {
-    // Navigate to the EditProfilePage, passing the current uid.
-    Navigator.push(
+  // New: Log out functionality. When pressed, sign out from Firebase Auth
+  // and navigate to the LoginPage.
+  Future<void> _logOut() async {
+    await FirebaseAuth.instance.signOut();
+    Navigator.pushReplacement(
       context,
-      MaterialPageRoute(
-        builder: (context) => EditProfilePage(uid: widget.uid),
-      ),
+      MaterialPageRoute(builder: (context) => LoginPage()),
     );
   }
 
@@ -169,9 +169,7 @@ class _ProfileInfoPageState extends State<ProfileInfoPage> {
           final email = data['email_address'] ?? '';
           final profileUrlFromDb = data['profile_image_url'] ?? '';
 
-          // Decide what to show in the CircleAvatar:
-          //   1. The newly uploaded `profileImageUrl` if we have it in local state
-          //   2. Otherwise, fallback to the DB's `profileUrlFromDb`
+          // Decide which URL to show: the newly uploaded one (if available) or the DB value.
           final effectiveProfileUrl = profileImageUrl ?? profileUrlFromDb;
 
           return SingleChildScrollView(
@@ -179,7 +177,7 @@ class _ProfileInfoPageState extends State<ProfileInfoPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // Profile Picture (tappable to update)
+                // Profile Picture with a blue pen icon at the bottom right.
                 GestureDetector(
                   onTap: _pickAndUploadImage,
                   child: Stack(
@@ -196,6 +194,19 @@ class _ProfileInfoPageState extends State<ProfileInfoPage> {
                             : null,
                       ),
                       if (_isUploading) const CircularProgressIndicator(),
+                      // Blue pen icon positioned at the bottom right.
+                      Positioned(
+                        bottom: 0,
+                        right: 0,
+                        child: GestureDetector(
+                          onTap: _pickAndUploadImage,
+                          child: CircleAvatar(
+                            radius: 18,
+                            backgroundColor: Colors.blue,
+                            child: const Icon(Icons.edit, size: 20, color: Colors.white),
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -220,12 +231,14 @@ class _ProfileInfoPageState extends State<ProfileInfoPage> {
                   child: const Text("Change Password"),
                 ),
                 const SizedBox(height: 16),
+                // Red Log Out button with white text.
                 ElevatedButton(
-                  onPressed: _editProfile,
+                  onPressed: _logOut,
                   style: ElevatedButton.styleFrom(
+                    foregroundColor: Colors.white, backgroundColor: Colors.red,
                     minimumSize: const Size(double.infinity, 48),
                   ),
-                  child: const Text("Edit Profile"),
+                  child: const Text("Log Out"),
                 ),
               ],
             ),
