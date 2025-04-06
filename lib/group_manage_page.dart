@@ -21,7 +21,6 @@ class _GroupManagePageState extends State<GroupManagePage> {
   String? errorMessage;
 
   late MapboxMapController mapController; // Mapbox controller for controlling the map
-  LatLng? mapLocation; // Store the LatLng based on fetched data
 
   Future<void> fetchGroupDetails() async {
     try {
@@ -30,7 +29,6 @@ class _GroupManagePageState extends State<GroupManagePage> {
       if (response.statusCode == 200) {
         setState(() {
           groupData = jsonDecode(response.body);
-          mapLocation = LatLng(groupData!['location_lat'], groupData!['location_long']);
           isLoading = false;
         });
       } else {
@@ -100,4 +98,3 @@ class _GroupManagePageState extends State<GroupManagePage> {
     );
   }
 }
-
