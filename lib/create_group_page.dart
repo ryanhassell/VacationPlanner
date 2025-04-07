@@ -35,13 +35,41 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
     );
 
     if (response.statusCode == 200) {
+      final responseData = jsonDecode(response.body);
+      final int gid = responseData['gid'];
+      print(gid);
+      print(responseData['gid']);
+
+      // Call _createMember with the returned group id
+      await _createMember(gid);
+
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('User created successfully!')),
+        const SnackBar(content: Text('Group and member created successfully!')),
       );
       Navigator.pop(context);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error: ${response.body}')),
+      );
+    }
+  }
+
+  Future<void> _createMember(int gid) async {
+    const String apiUrl = 'http://$ip/members';
+
+    final response = await http.post(
+      Uri.parse(apiUrl),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'uid': widget.uid,
+        'gid': gid,
+        'role': "Owner",
+      }),
+    );
+
+    if (response.statusCode != 200) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error creating member: ${response.body}')),
       );
     }
   }

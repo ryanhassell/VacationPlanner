@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:mapbox_gl/mapbox_gl.dart'; // Import Mapbox
+import 'members_list_page.dart';  // Import the MembersPage
 
 import 'global_vars.dart';
 
@@ -89,15 +90,30 @@ class _GroupManagePageState extends State<GroupManagePage> {
                 "sk.eyJ1IjoiY2hlZXNlZnJpZXMiLCJhIjoiY204bmJjc2toMDBnMjJ5cHpkaWQ0aWVldSJ9.j3l4E43PL3P1MKT_KtjUTw", // Replace with your actual Mapbox token
                 initialCameraPosition: CameraPosition(
                   target: LatLng(
-                    double.parse(
-                        groupData!['location_lat'].toString()),
-                    double.parse(
-                        groupData!['location_long'].toString()),
+                    double.parse(groupData!['location_lat'].toString()),
+                    double.parse(groupData!['location_long'].toString()),
                   ),
                   zoom: 10.0,
                 ),
                 onMapCreated: _onMapCreated,
               ),
+            ),
+            const SizedBox(height: 20),
+            // Button to navigate to MembersPage
+            ElevatedButton(
+              onPressed: () {
+                // Navigate to the MembersPage
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => MembersListPage(
+                      uid: widget.uid,
+                      gid: widget.gid.toString(),  // Pass gid to MembersPage
+                    ),
+                  ),
+                );
+              },
+              child: const Text("View Members"),
             ),
           ],
         ),
