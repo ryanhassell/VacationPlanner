@@ -1,91 +1,114 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'global_vars.dart'; // Contains your backend IP and settings
+import 'dart:convert';
+import 'global_vars.dart';
 
 class InviteUserPage extends StatefulWidget {
-  final int groupId;
-  const InviteUserPage({Key? key, required this.groupId}) : super(key: key);
+  final String uid; // Inviter's UID
+  final int gid; // Group ID
+
+  const InviteUserPage({super.key, required this.uid, required this.gid});
 
   @override
-  _InviteUserPageState createState() => _InviteUserPageState();
+  State<InviteUserPage> createState() => _InviteUserPageState();
 }
 
 class _InviteUserPageState extends State<InviteUserPage> {
+  final _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
-  bool _loading = false;
-  String? _message;
+  String _selectedRole = 'Member';
+  bool _isSubmitting = false;
 
-  Future<void> sendInvite() async {
-    setState(() {
-      _loading = true;
-      _message = null;
-    });
-    final url = Uri.parse("http://$ip/invites/send_invite");
-    final payload = {
-      "email": _emailController.text.trim(),
-      "group": widget.groupId,
-    };
+  Future<void> _submitInvite() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    final email = _emailController.text.trim();
+
+    setState(() => _isSubmitting = true);
+
     try {
-      final response = await http.post(
-        url,
-        headers: {"Content-Type": "application/json"},
-        body: json.encode(payload),
-      );
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        setState(() {
-          _message =
-          "Invite sent successfully! Invite link: ${data['invite_link']}";
-        });
-      } else {
-        setState(() {
-          _message = "Failed to send invite. Error: ${response.body}";
-        });
+      // Step 1: Lookup UID by email
+      final lookupUrl = Uri.parse('http://$ip/users/invite/id/$email');
+      final lookupResponse = await http.get(lookupUrl);
+
+      if (lookupResponse.statusCode != 200) {
+        throw Exception('User not found');
       }
+
+      final userJson = jsonDecode(lookupResponse.body);
+      final invitedUid = userJson['uid'];
+
+      // Step 2: Submit the invite
+      final inviteUrl = Uri.parse('http://$ip/invites');
+      final inviteBody = {
+        'uid': invitedUid,         // The user being invited
+        'gid': widget.gid,
+        'invited_by': widget.uid,  // The inviter
+        'role': _selectedRole,
+      };
+
+      final inviteResponse = await http.post(
+        inviteUrl,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(inviteBody),
+      );
+
+      if (inviteResponse.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Invitation sent!')),
+        );
+        Navigator.pop(context);
+      } else {
+        throw Exception('Failed to send invite: ${inviteResponse.body}');
+      }
+
     } catch (e) {
-      setState(() {
-        _message = "Error sending invite: $e";
-      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
+    } finally {
+      setState(() => _isSubmitting = false);
     }
-    setState(() {
-      _loading = false;
-    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text("Invite User to Group"),
-      ),
+      appBar: AppBar(title: const Text('Invite User')),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            TextField(
-              controller: _emailController,
-              decoration: const InputDecoration(
-                labelText: "Enter email address",
-                border: OutlineInputBorder(),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            children: [
+              TextFormField(
+                controller: _emailController,
+                decoration: const InputDecoration(labelText: 'User Email'),
+                validator: (value) {
+                  if (value == null || value.isEmpty) return 'Email is required';
+                  final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+                  if (!emailRegex.hasMatch(value)) return 'Enter a valid email';
+                  return null;
+                },
               ),
-              keyboardType: TextInputType.emailAddress,
-            ),
-            const SizedBox(height: 20),
-            _loading
-                ? const CircularProgressIndicator()
-                : ElevatedButton(
-              onPressed: sendInvite,
-              child: const Text(
-                "Send Invite",
-                style: TextStyle(fontSize: 18),
-              ),
-            ),
-            if (_message != null) ...[
               const SizedBox(height: 20),
-              Text(_message!, style: const TextStyle(fontSize: 16)),
+              DropdownButtonFormField<String>(
+                value: _selectedRole,
+                items: const [
+                  DropdownMenuItem(value: 'Member', child: Text('Member')),
+                  DropdownMenuItem(value: 'Admin', child: Text('Admin')),
+                ],
+                onChanged: (value) => setState(() => _selectedRole = value!),
+                decoration: const InputDecoration(labelText: 'Role'),
+              ),
+              const SizedBox(height: 30),
+              ElevatedButton.icon(
+                onPressed: _isSubmitting ? null : _submitInvite,
+                icon: const Icon(Icons.send),
+                label: Text(_isSubmitting ? 'Sending...' : 'Send Invite'),
+              ),
             ],
-          ],
+          ),
         ),
       ),
     );

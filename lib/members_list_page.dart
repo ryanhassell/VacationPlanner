@@ -102,7 +102,8 @@ class _MembersListPageState extends State<MembersListPage> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => InviteUserPage(groupId: int.parse(widget.gid)),
+              builder: (context) => InviteUserPage(uid: widget.uid,
+                      gid: int.parse(widget.gid)),
             ),
           );
         },

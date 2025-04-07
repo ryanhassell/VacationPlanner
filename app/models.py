@@ -57,3 +57,17 @@ class Member(Base):
     __table_args__ = (
         UniqueConstraint('uid','gid', name='_uid_gid_uc'),
     )
+
+class Invite(Base):
+    __tablename__ = "invites"
+    uid = Column(String, ForeignKey('users.uid', ondelete='CASCADE'), primary_key=True)
+    gid = Column(Integer, ForeignKey('groups.gid', ondelete='CASCADE'), primary_key=True)
+    invited_by = Column(String)
+    role = Column(Enum(RoleEnum, name="role"))
+
+    user = relationship('User', backref='invites', foreign_keys=[uid])
+    group = relationship('Group', backref='invites', foreign_keys=[gid])
+
+    __table_args__ = (
+        UniqueConstraint('uid', 'gid', name='_uid_gid_inv'),
+    )
