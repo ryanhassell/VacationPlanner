@@ -34,27 +34,25 @@ exports.sendPasswordResetEmail = functions.https.onCall(async (data, context) =>
 
 const POSTGRES_API_URL = `http://${global.ip}/users/update-password`;
 
-exports.syncPasswordReset = functions.auth.user().onUpdate(async (change) => {
+exports.notifyPasswordReset = functions.https.onCall(async (data, context) => {
+  const email = data.email;
+
+  if (!email) {
+    throw new functions.https.HttpsError('invalid-argument', 'Email is required.');
+  }
+
   try {
-    const before = change.before;
-    const after = change.after;
+    await axios.put(POSTGRES_API_URL, {
+      email: email,
+      new_password: "NEW_PASSWORD_PLACEHOLDER"
+    });
 
-    // If only the password was updated
-    if (before.passwordHash !== after.passwordHash) {
-      const email = after.email;
+    console.log(`PostgreSQL updated for user: ${email}`);
 
-      console.log(`Password reset detected for: ${email}`);
-
-      // Send a request to update PostgreSQL
-      await axios.put(POSTGRES_API_URL, {
-        email: email,
-        new_password: "NEW_PASSWORD_PLACEHOLDER" // The user will enter this in your app
-      });
-
-      console.log(`PostgreSQL updated for user: ${email}`);
-    }
+    return {success: true};
   } catch (error) {
     console.error("Error syncing password reset:", error);
+    throw new functions.https.HttpsError('internal', 'Failed updating password reset.');
   }
 });
 

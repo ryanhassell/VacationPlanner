@@ -180,6 +180,7 @@ class _TripTabPageState extends State<TripTabPage> {
               landmarkTypes: landmarkTypes,
               maxDistance: _maxTripDistance,
               maxInterlandmarkDistance: _maxInterlandmarkDistance,
+              numDestinations: _numDestinations,
             ),
           ),
         );

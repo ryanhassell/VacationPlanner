@@ -13,6 +13,7 @@ class TripDetailPage extends StatefulWidget {
   final String landmarkTypes;
   final double maxDistance;
   final double maxInterlandmarkDistance;
+  final int numDestinations;
 
   const TripDetailPage({
     Key? key,
@@ -22,6 +23,7 @@ class TripDetailPage extends StatefulWidget {
     required this.landmarkTypes,
     required this.maxDistance,
     required this.maxInterlandmarkDistance,
+    required this.numDestinations,
   }) : super(key: key);
 
   @override
@@ -58,6 +60,7 @@ class _TripDetailPageState extends State<TripDetailPage> {
             "&landmark_types=${widget.landmarkTypes}"
             "&max_distance=${widget.maxDistance}"
             "&max_interlandmark_distance=${widget.maxInterlandmarkDistance}"
+            "&num_destinations=${widget.numDestinations}" // Added here
     );
 
     print("Fetching trip data from: $url");

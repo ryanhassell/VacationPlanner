@@ -43,6 +43,7 @@ class Trip(Base):
     group = Column(Integer)
     location_lat = Column(Double)
     location_long = Column(Double)
+    landmarks = Column(ARRAY(Double))
 
 class Member(Base):
     __tablename__ = "members"
@@ -56,7 +57,3 @@ class Member(Base):
     __table_args__ = (
         UniqueConstraint('uid','gid', name='_uid_gid_uc'),
     )
-
-##class Random(Base):
-
-##class Planned(Base):

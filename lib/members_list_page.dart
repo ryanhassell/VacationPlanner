@@ -1,8 +1,8 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'dart:convert';
-
 import 'global_vars.dart';
+import 'invite_user_page.dart'; // Ensure this import is correct
 
 class MembersListPage extends StatefulWidget {
   final String uid; // User ID
@@ -85,16 +85,29 @@ class _MembersListPageState extends State<MembersListPage> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator()) // Show loading indicator
           : _members.isEmpty
-          ? const Center(child: Text('No members found')) // Show no members message
+          ? const Center(child: Text('No members found'))
           : ListView.builder(
         itemCount: _members.length,
         itemBuilder: (context, index) {
           final member = _members[index];
           return ListTile(
-            title: Text('${member.firstName} ${member.lastName}'), // Show member full name
-            subtitle: Text('Role: ${member.role}'), // Show member role
+            title: Text('${member.firstName} ${member.lastName}'),
+            subtitle: Text('Role: ${member.role}'),
           );
         },
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          // Navigate to InviteUserPage, converting gid to int
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => InviteUserPage(groupId: int.parse(widget.gid)),
+            ),
+          );
+        },
+        label: const Text("Invite User"),
+        icon: const Icon(Icons.person_add),
       ),
     );
   }
