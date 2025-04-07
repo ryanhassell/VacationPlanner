@@ -4,7 +4,7 @@ import 'login_page.dart';
 import 'create_group_page.dart';
 import 'view_groups_page.dart';
 import 'profile_info_page.dart';
-import 'trip_page.dart'; // Import the new trip page
+import 'trip_tab_page.dart'; // Import the new trip page
 
 class DebugPage extends StatelessWidget {
   final String uid;
@@ -78,10 +78,8 @@ class DebugPage extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const TripPage(
+                      builder: (context) => const TripTabPage(
                         group: 1,
-                        userLat: 37.7749,
-                        userLong: -122.4194,
                       ),
                     ),
                   );

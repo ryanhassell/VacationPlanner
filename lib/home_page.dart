@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:vacation_planner/trip_detail_page.dart';
 import 'dart:convert';
 import 'global_vars.dart'; // Contains your 'ip' variable
 import 'login_page.dart';
 import 'create_group_page.dart';
 import 'view_groups_page.dart';
 import 'profile_info_page.dart';
-import 'trip_page.dart';
+import 'trip_tab_page.dart'; // Import the new Trip tab page
 import 'debug_page.dart';
 
 class HomePage extends StatefulWidget {
@@ -19,7 +20,6 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
-
   late List<Widget> _screens;
 
   @override
@@ -30,8 +30,10 @@ class _HomePageState extends State<HomePage> {
       HomeFeedPage(uid: widget.uid),
       // Groups Tab
       ViewGroupsPage(uid: widget.uid),
-      // Trips Tab (Placeholder)
-      const PlaceholderScreen(title: 'Trips'),
+      // Trips Tab: New Trip tab with random trip generator and Mapbox map.
+      TripTabPage(
+        group: 1,
+      ),
     ];
   }
 
@@ -77,13 +79,12 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
-/// The main Home feed screen with a header (showing the user's name + profile image),
-/// a scrollable area for news feed items, and a footer.
+/// The main Home feed screen (unchanged)
 class HomeFeedPage extends StatelessWidget {
   final String uid;
   const HomeFeedPage({super.key, required this.uid});
 
-  /// Fetch user data from your backend.
+  /// Fetches user data from your backend.
   Future<Map<String, dynamic>> _fetchUserData() async {
     final response = await http.get(Uri.parse("http://$ip/users/$uid"));
     if (response.statusCode == 200) {
@@ -113,7 +114,6 @@ class HomeFeedPage extends StatelessWidget {
                 builder: (context, snapshot) {
                   String displayName = "User";
                   String imageUrl = "";
-
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     displayName = "Loading...";
                   } else if (snapshot.hasData) {
@@ -121,7 +121,6 @@ class HomeFeedPage extends StatelessWidget {
                     displayName = data['first_name'] ?? "User";
                     imageUrl = data['profile_image_url'] ?? "";
                   }
-
                   return GestureDetector(
                     onTap: () {
                       Navigator.push(
@@ -133,16 +132,12 @@ class HomeFeedPage extends StatelessWidget {
                     },
                     child: Row(
                       children: [
-                        // Display the name on the left
                         Text(
                           displayName,
                           style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w500,
-                          ),
+                              fontSize: 18, fontWeight: FontWeight.w500),
                         ),
                         const SizedBox(width: 8),
-                        // Show user's actual profile image if available
                         CircleAvatar(
                           radius: 30,
                           backgroundImage: imageUrl.isNotEmpty
@@ -158,7 +153,7 @@ class HomeFeedPage extends StatelessWidget {
             ],
           ),
         ),
-        // Scrollable content
+        // Scrollable content area.
         Expanded(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
@@ -167,15 +162,16 @@ class HomeFeedPage extends StatelessWidget {
                 Container(
                   height: 200,
                   color: Colors.grey[300],
-                  child: const Center(child: Text('News Feed Items Placeholder')),
+                  child: const Center(
+                      child: Text('News Feed Items Placeholder')),
                 ),
                 const SizedBox(height: 20),
-                // More feed items can go here
+                // Additional feed items can be added here.
               ],
             ),
           ),
         ),
-        // Footer
+        // Footer.
         Container(
           padding: const EdgeInsets.all(16.0),
           color: Colors.white,
@@ -187,22 +183,6 @@ class HomeFeedPage extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-/// A simple placeholder screen for future tabs.
-class PlaceholderScreen extends StatelessWidget {
-  final String title;
-  const PlaceholderScreen({super.key, required this.title});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Text(
-        '$title Screen Placeholder',
-        style: const TextStyle(fontSize: 24),
-      ),
     );
   }
 }
