@@ -9,6 +9,7 @@ import 'view_groups_page.dart';
 import 'profile_info_page.dart';
 import 'trip_tab_page.dart'; // Import the new Trip tab page
 import 'debug_page.dart';
+import 'view_invites_page.dart'; // Import the new View Invites Page
 
 class HomePage extends StatefulWidget {
   final String uid;
@@ -31,9 +32,9 @@ class _HomePageState extends State<HomePage> {
       // Groups Tab
       ViewGroupsPage(uid: widget.uid),
       // Trips Tab: New Trip tab with random trip generator and Mapbox map.
-      TripTabPage(
-        group: 1,
-      ),
+      TripTabPage(group: 1),
+      // Invites Tab: The new ViewInvitesPage to display invites.
+      ViewInvitesPage(uid: widget.uid),
     ];
   }
 
@@ -50,18 +51,24 @@ class _HomePageState extends State<HomePage> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
+        selectedItemColor: Colors.black,  // Set selected item color to black
+        unselectedItemColor: Colors.black,  // Set unselected item color to black
         items: const [
           BottomNavigationBarItem(
-            icon: Icon(Icons.home),
+            icon: Icon(Icons.home, color: Colors.black),  // Icon color set to black
             label: 'Home',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.group),
+            icon: Icon(Icons.group, color: Colors.black),  // Icon color set to black
             label: 'Groups',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.card_travel),
+            icon: Icon(Icons.card_travel, color: Colors.black),  // Icon color set to black
             label: 'Trips',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.mail, color: Colors.black),  // Icon color set to black
+            label: 'Invites',
           ),
         ],
       ),
