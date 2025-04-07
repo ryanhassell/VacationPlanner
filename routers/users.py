@@ -62,7 +62,6 @@ async def create_user(user: UserCreate, db: Session = Depends(get_db)):
             last_name=user.last_name,
             email_address=user.email_address,
             phone_number=user.phone_number,
-            groups=user.groups,
         )
         db.add(new_user)
         db.commit()

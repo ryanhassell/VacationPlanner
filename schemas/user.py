@@ -10,7 +10,6 @@ class UserResponse(BaseModel):
     email_address: str
     phone_number: str
     # user_type: Enum
-    groups: List[int]
     profile_image_url: Optional[str]
 
 
@@ -24,7 +23,6 @@ class UserCreate(BaseModel):
     email_address: str
     phone_number: str
     # user_type: Enum
-    groups: List[int]
     profile_image_url: Optional[str]
 
 
@@ -34,7 +32,6 @@ class UserUpdate(BaseModel):
     email_address: str
     phone_number: str
     # user_type: Enum
-    groups: List[int]
     profile_image_url: Optional[str]
 
 from pydantic import BaseModel

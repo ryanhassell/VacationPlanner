@@ -11,9 +11,7 @@ class GroupTypeEnum(str, Enum):
 
 class GroupResponse(BaseModel):
     gid: int
-    members: List[int]
     owner: str
-    admin: List[int]
     group_name: str
     location_lat: float
     location_long: float
@@ -29,9 +27,7 @@ class GroupCreate(BaseModel):
 
 
 class GroupUpdate(BaseModel):
-    members: List[int]
     owner: str
-    admin: List[int]
     group_name: str
     location_lat: float
     location_long: float
@@ -48,3 +44,4 @@ class TempGroupResponse(BaseModel):
     location_lat: float
     location_long: float
     group_type: GroupTypeEnum
+
