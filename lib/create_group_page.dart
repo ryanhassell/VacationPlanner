@@ -36,7 +36,9 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
 
     if (response.statusCode == 200) {
       final responseData = jsonDecode(response.body);
-      final String gid = responseData['gid'];
+      final int gid = responseData['gid'];
+      print(gid);
+      print(responseData['gid']);
 
       // Call _createMember with the returned group id
       await _createMember(gid);
@@ -52,7 +54,7 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
     }
   }
 
-  Future<void> _createMember(String gid) async {
+  Future<void> _createMember(int gid) async {
     const String apiUrl = 'http://$ip/members';
 
     final response = await http.post(

@@ -73,7 +73,7 @@ async def groups_gid_by_uid(uid: str, db: Session = Depends(get_db)):
     groups = db.query(Group.gid, Group.group_name).filter(Group.owner == uid).all()
     return [{"gid": g[0], "group_name": g[1]} for g in groups]
 
-@router.post("", response_model=GroupCreate)
+@router.post("", response_model=GroupResponse)
 async def create_group(group: GroupCreate, db: Session = Depends(get_db)):
     # Create a new group in the database
     new_group = Group(
