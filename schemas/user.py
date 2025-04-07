@@ -34,6 +34,12 @@ class UserUpdate(BaseModel):
     # user_type: Enum
     profile_image_url: Optional[str]
 
+class UserMember(BaseModel):
+    uid: str
+    first_name: str
+    last_name: str
+    email_address: str
+
 from pydantic import BaseModel
 
 class UserChangePassword(BaseModel):
