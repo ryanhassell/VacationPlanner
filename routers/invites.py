@@ -1,3 +1,5 @@
+from typing import List
+
 from sqlalchemy.orm import Session
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -45,3 +47,11 @@ async def create_group(invite: InviteCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_invite)
     return new_invite
+
+
+@router.get("/list_invites_by_user/{uid}", response_model=List[InviteResponse])
+def list_invites_by_user(uid: str, db: Session = Depends(get_db)):
+    invites = db.query(Invite).filter(Invite.uid == uid).all()
+    if not invites:
+        return []
+    return invites

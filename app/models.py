@@ -10,6 +10,7 @@ from sqlalchemy import (
     ForeignKey,
     Boolean, UniqueConstraint,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import declarative_base, relationship
 
 from schemas.group import GroupTypeEnum
@@ -39,11 +40,13 @@ class Group(Base):
 
 class Trip(Base):
     __tablename__ = "trips"
-    tid = Column(Integer, primary_key=True, index=True)
-    group = Column(Integer)
-    location_lat = Column(Double)
-    location_long = Column(Double)
-    landmarks = Column(ARRAY(Double))
+
+    tid = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    group = Column(Integer, nullable=False)
+    location_lat = Column(Float, nullable=False)
+    location_long = Column(Float, nullable=False)
+    landmarks = Column(JSONB)  # Save list of landmark dicts here
+    uid = Column(String, ForeignKey('users.uid', ondelete='CASCADE'), nullable=False)
 
 class Member(Base):
     __tablename__ = "members"
