@@ -1,13 +1,15 @@
 import math
 import urllib
 import json
+from typing import List
+
 import requests
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 from app.global_vars import DB_USERNAME, DB_PASSWORD, DB_HOST, DB_NAME, MAPBOX_PUBLIC_TOKEN
 from app.models import Trip, Base
-from schemas.trip import TripResponse
+from schemas.trip import TripResponse, TripSummaryResponse, Landmark
 
 # Database setup
 conn_string = f"postgresql://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}"
@@ -17,6 +19,7 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 router = APIRouter()
 
+
 def get_db():
     db = SessionLocal()
     try:
@@ -24,16 +27,20 @@ def get_db():
     finally:
         db.close()
 
+
 def haversine_distance(lat1, lon1, lat2, lon2):
     """Returns distance in miles between two lat/long points using the Haversine formula."""
     R = 3958.8  # Earth radius in miles
     d_lat = math.radians(lat2 - lat1)
     d_lon = math.radians(lon2 - lon1)
-    a = math.sin(d_lat / 2) ** 2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(d_lon / 2) ** 2
+    a = math.sin(d_lat / 2) ** 2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(
+        d_lon / 2) ** 2
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
     return R * c
 
-def get_landmarks(lat: float, lng: float, landmark_types: str, max_distance: float, num_destinations: int, category_counts_str: str):
+
+def get_landmarks(lat: float, lng: float, landmark_types: str, max_distance: float, num_destinations: int,
+                  category_counts_str: str):
     """
     For each selected category, performs a forward search using the Mapbox Search Box API’s forward endpoint (with types=poi)
     and gathers candidates within max_distance (miles). For each category, it selects up to the desired number as specified in
@@ -102,6 +109,7 @@ def get_landmarks(lat: float, lng: float, landmark_types: str, max_distance: flo
         "commercial", "office", "plaza", "mall", "complex", "apartment", "lane",
         "parkway", "court", "common", "commons", "place"
     ]
+
     def is_unwanted(name: str) -> bool:
         lower_name = name.lower()
         return any(word in lower_name for word in unwanted_words)
@@ -202,32 +210,155 @@ def get_landmarks(lat: float, lng: float, landmark_types: str, max_distance: flo
     print("\nFinal landmarks returned:", selected_candidates)
     return selected_candidates
 
+
 @router.post("/generate_trip", response_model=TripResponse)
 def generate_trip(
         group: int,
+        uid: str,
         location_lat: float,
         location_long: float,
         landmark_types: str = "",
         max_distance: float = 50.0,
         num_destinations: int = 1,
-        category_counts: str = "{}",  # Expecting JSON string, e.g. '{"Food": 1, "Parks": 2}'
+        category_counts: str = "{}",
         db: Session = Depends(get_db)
 ):
+    # Get landmarks FIRST
+    landmarks = get_landmarks(location_lat, location_long, landmark_types, max_distance, num_destinations,
+                              category_counts)
+
     new_trip = Trip(
         group=group,
+        uid=uid,
         location_lat=location_lat,
-        location_long=location_long
+        location_long=location_long,
+        landmarks=landmarks
     )
+
     db.add(new_trip)
     db.commit()
     db.refresh(new_trip)
 
-    landmarks = get_landmarks(location_lat, location_long, landmark_types, max_distance, num_destinations, category_counts)
-
     return TripResponse(
         trip_id=new_trip.tid,
         group=new_trip.group,
+        uid=new_trip.uid,
         location_lat=new_trip.location_lat,
         location_long=new_trip.location_long,
         landmarks=landmarks
     )
+
+
+@router.post("/custom_trip", response_model=TripResponse)
+def create_custom_trip(
+        group: int,
+        uid: str,
+        landmarks: list[dict],
+        db: Session = Depends(get_db)
+):
+    new_trip = Trip(
+        group=group,
+        uid=uid,
+        location_lat=landmarks[0]["lat"],  # Just pick first landmark for rough center
+        location_long=landmarks[0]["long"],
+        landmarks=landmarks  # save all landmark dicts directly
+    )
+
+    db.add(new_trip)
+    db.commit()
+    db.refresh(new_trip)
+
+    return TripResponse(
+        trip_id=new_trip.tid,
+        group=new_trip.group,
+        uid=new_trip.uid,
+        location_lat=new_trip.location_lat,
+        location_long=new_trip.location_long,
+        landmarks=landmarks
+    )
+
+
+@router.get("/list_trips_by_user/{uid}", response_model=List[TripSummaryResponse])
+def list_trips_by_user(uid: str, db: Session = Depends(get_db)):
+    trips = db.query(Trip).filter(Trip.uid == uid).all()
+    if not trips:
+        return []
+    return [
+        TripSummaryResponse(
+            trip_id=trip.tid,
+            group=trip.group,
+            location_lat=trip.location_lat,
+            location_long=trip.location_long
+        )
+        for trip in trips
+    ]
+
+
+@router.get("/get_trip/{trip_id}", response_model=TripResponse)
+def get_trip(trip_id: int, db: Session = Depends(get_db)):
+    trip = db.query(Trip).filter(Trip.tid == trip_id).first()
+    if not trip:
+        raise HTTPException(status_code=404, detail="Trip not found")
+
+    return TripResponse(
+        trip_id=trip.tid,
+        group=trip.group,
+        uid=trip.uid,
+        location_lat=trip.location_lat,
+        location_long=trip.location_long,
+        landmarks=trip.landmarks
+    )
+
+
+@router.put("/update_trip/{trip_id}", response_model=TripResponse)
+def update_trip(
+        trip_id: int,
+        landmarks: List[dict],
+        db: Session = Depends(get_db)
+):
+    trip = db.query(Trip).filter(Trip.tid == trip_id).first()
+    if not trip:
+        raise HTTPException(status_code=404, detail="Trip not found")
+
+    # Convert any Landmark objects to plain dicts if necessary
+    updated_landmarks = []
+    for l in landmarks:
+        if isinstance(l, dict):
+            updated_landmarks.append({
+                "name": l["name"],
+                "lat": l["lat"],
+                "long": l["long"],
+                "type": l.get("type", "custom")
+            })
+        else:  # If still a Landmark object
+            updated_landmarks.append({
+                "name": l.name,
+                "lat": l.lat,
+                "long": l.long,
+                "type": l.type
+            })
+
+    trip.landmarks = updated_landmarks
+    db.commit()
+    db.refresh(trip)
+
+    return TripResponse(
+        trip_id=trip.tid,
+        group=trip.group,
+        uid=trip.uid,
+        location_lat=trip.location_lat,
+        location_long=trip.location_long,
+        landmarks=trip.landmarks
+    )
+
+
+@router.delete("/delete_trip/{trip_id}")
+def delete_trip(trip_id: int, db: Session = Depends(get_db)):
+    trip = db.query(Trip).filter(Trip.tid == trip_id).first()
+    if not trip:
+        raise HTTPException(status_code=404, detail="Trip not found")
+
+    db.delete(trip)
+    db.commit()
+    return {"message": "Trip deleted successfully"}
+

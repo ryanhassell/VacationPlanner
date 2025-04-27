@@ -4,7 +4,7 @@ import 'login_page.dart';
 import 'create_group_page.dart';
 import 'view_groups_page.dart';
 import 'profile_info_page.dart';
-import 'trip_tab_page.dart'; // Import the new trip page
+import 'create_random_trip.dart'; // Import the new trip page
 
 class DebugPage extends StatelessWidget {
   final String uid;
@@ -78,8 +78,8 @@ class DebugPage extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const TripTabPage(
-                        group: 1,
+                      builder: (context) => const CreateRandomTripPage(
+                        group: 1, uid: "1"
                       ),
                     ),
                   );

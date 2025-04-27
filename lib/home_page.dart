@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:vacation_planner/trip_detail_page.dart';
+import 'package:vacation_planner/trip_landing_page.dart';
 import 'dart:convert';
 import 'global_vars.dart'; // Contains your 'ip' variable
 import 'login_page.dart';
 import 'create_group_page.dart';
 import 'view_groups_page.dart';
 import 'profile_info_page.dart';
-import 'trip_tab_page.dart'; // Import the new Trip tab page
+import 'create_random_trip.dart'; // Import the new Trip tab page
 import 'debug_page.dart';
 
 class HomePage extends StatefulWidget {
@@ -21,6 +22,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
   late List<Widget> _screens;
+  bool showDebugButton = true; // Toggle this to false for production
 
   @override
   void initState() {
@@ -31,8 +33,8 @@ class _HomePageState extends State<HomePage> {
       // Groups Tab
       ViewGroupsPage(uid: widget.uid),
       // Trips Tab: New Trip tab with random trip generator and Mapbox map.
-      TripTabPage(
-        group: 1,
+      TripLandingPage(
+        uid: widget.uid,
       ),
     ];
   }
@@ -46,7 +48,32 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(child: _screens[_selectedIndex]),
+      body: Stack(
+        children: [
+          SafeArea(child: _screens[_selectedIndex]),
+
+          if (showDebugButton)
+            Positioned(
+              right: 10,
+              top: MediaQuery
+                  .of(context)
+                  .size
+                  .height * 0.4,
+              child: FloatingActionButton(
+                mini: true,
+                backgroundColor: Colors.redAccent,
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => DebugPage(uid: widget.uid)),
+                  );
+                },
+                child: const Icon(Icons.bug_report),
+              ),
+            ),
+        ],
+      ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
@@ -64,16 +91,6 @@ class _HomePageState extends State<HomePage> {
             label: 'Trips',
           ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => DebugPage(uid: widget.uid)),
-          );
-        },
-        label: const Text('DEBUG'),
-        icon: const Icon(Icons.bug_report),
       ),
     );
   }
