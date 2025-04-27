@@ -10,13 +10,11 @@ from sqlalchemy import (
     ForeignKey,
     Boolean, UniqueConstraint,
 )
-from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import declarative_base, relationship
 
 from schemas.group import GroupTypeEnum
 
 from schemas.member import RoleEnum
-from schemas.trip import LandmarkTypeEnum
 
 Base = declarative_base()
 
@@ -30,7 +28,6 @@ class User(Base):
     phone_number = Column(String)
     profile_image_url = Column(String)
 
-
 class Group(Base):
     __tablename__ = "groups"
     gid = Column(Integer, primary_key=True, index=True)
@@ -42,24 +39,36 @@ class Group(Base):
 
 class Trip(Base):
     __tablename__ = "trips"
-
-    tid = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    group = Column(Integer, nullable=False)
-    location_lat = Column(Float, nullable=False)
-    location_long = Column(Float, nullable=False)
-    landmarks = Column(JSONB)
-    uid = Column(String, ForeignKey('users.uid', ondelete='CASCADE'), nullable=False)
-
+    tid = Column(Integer, primary_key=True, index=True)
+    group = Column(Integer)
+    location_lat = Column(Double)
+    location_long = Column(Double)
+    landmarks = Column(ARRAY(Double))
 
 class Member(Base):
     __tablename__ = "members"
     uid = Column(String, ForeignKey('users.uid', ondelete='CASCADE'), primary_key=True)
     gid = Column(Integer, ForeignKey('groups.gid', ondelete='CASCADE'), primary_key=True)
-    role = Column(Enum(RoleEnum, name="role"))
+    role = Column (Enum(RoleEnum, name="role"))
 
     user = relationship('User', backref='members', foreign_keys=[uid])
     group = relationship('Group', backref='members', foreign_keys=[gid])
 
     __table_args__ = (
-        UniqueConstraint('uid', 'gid', name='_uid_gid_uc'),
+        UniqueConstraint('uid','gid', name='_uid_gid_uc'),
+    )
+
+
+class Invite(Base):
+    __tablename__ = "invites"
+    uid = Column(String, ForeignKey('users.uid', ondelete='CASCADE'), primary_key=True)
+    gid = Column(Integer, ForeignKey('groups.gid', ondelete='CASCADE'), primary_key=True)
+    invited_by = Column(String)
+    role = Column(Enum(RoleEnum, name="role"))
+
+    user = relationship('User', backref='invites', foreign_keys=[uid])
+    group = relationship('Group', backref='invites', foreign_keys=[gid])
+
+    __table_args__ = (
+        UniqueConstraint('uid', 'gid', name='_uid_gid_inv'),
     )

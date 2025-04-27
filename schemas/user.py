@@ -40,6 +40,9 @@ class UserMember(BaseModel):
     last_name: str
     email_address: str
 
+class UserInvite(BaseModel):
+    uid: str
+
 from pydantic import BaseModel
 
 class UserChangePassword(BaseModel):

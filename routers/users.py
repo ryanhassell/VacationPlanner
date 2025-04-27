@@ -4,7 +4,7 @@ from sqlalchemy.orm import sessionmaker
 from app.global_vars import DB_HOST, DB_NAME, DB_PASSWORD, DB_USERNAME, FB_ACC_PATH
 from fastapi import FastAPI, HTTPException, Depends, APIRouter
 from app.models import Base, User, Group
-from schemas.user import UserResponse, UserCreate, UserUpdate, UserChangePassword, UserMember
+from schemas.user import UserResponse, UserCreate, UserUpdate, UserChangePassword, UserMember, UserInvite
 import firebase_admin # this error is here for some reason but still works idk
 from firebase_admin import auth, credentials #same here no idea
 
@@ -42,6 +42,13 @@ async def get_user(uid: str, db: Session = Depends(get_db)):
 @router.get("/member/info/{uid}", response_model=UserMember)
 async def get_user(uid: str, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.uid == uid).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
+
+@router.get("/invite/id/{email_address}", response_model=UserInvite)
+async def get_user(email_address: str, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email_address == email_address).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
