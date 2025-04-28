@@ -1,3 +1,5 @@
+import datetime
+
 from sqlalchemy import (
     Column,
     Integer,
@@ -29,6 +31,7 @@ class User(Base):
     phone_number = Column(String)
     profile_image_url = Column(String)
 
+
 class Group(Base):
     __tablename__ = "groups"
     gid = Column(Integer, primary_key=True, index=True)
@@ -37,6 +40,7 @@ class Group(Base):
     location_lat = Column(Double)
     location_long = Column(Double)
     group_type = Column(Enum(GroupTypeEnum, name="group_type"))
+
 
 class Trip(Base):
     __tablename__ = "trips"
@@ -48,17 +52,18 @@ class Trip(Base):
     landmarks = Column(JSONB)  # Save list of landmark dicts here
     uid = Column(String, ForeignKey('users.uid', ondelete='CASCADE'), nullable=False)
 
+
 class Member(Base):
     __tablename__ = "members"
     uid = Column(String, ForeignKey('users.uid', ondelete='CASCADE'), primary_key=True)
     gid = Column(Integer, ForeignKey('groups.gid', ondelete='CASCADE'), primary_key=True)
-    role = Column (Enum(RoleEnum, name="role"))
+    role = Column(Enum(RoleEnum, name="role"))
 
     user = relationship('User', backref='members', foreign_keys=[uid])
     group = relationship('Group', backref='members', foreign_keys=[gid])
 
     __table_args__ = (
-        UniqueConstraint('uid','gid', name='_uid_gid_uc'),
+        UniqueConstraint('uid', 'gid', name='_uid_gid_uc'),
     )
 
 
@@ -75,3 +80,14 @@ class Invite(Base):
     __table_args__ = (
         UniqueConstraint('uid', 'gid', name='_uid_gid_inv'),
     )
+
+
+class Message(Base):
+    __tablename__ = "messages"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    gid = Column(Integer, ForeignKey('groups.gid', ondelete='CASCADE'), nullable=False)
+    sender_uid = Column(String, ForeignKey('users.uid', ondelete='CASCADE'), nullable=False)
+    sender_name = Column(String, nullable=False)
+    text = Column(String, nullable=False)
+    timestamp = Column(DateTime, default=datetime.datetime.utcnow)

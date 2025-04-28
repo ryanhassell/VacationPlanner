@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from routers import users, groups, trips, members, invites
+from routers import users, groups, trips, members, invites, messages
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
@@ -21,3 +21,4 @@ app.include_router(groups.router, prefix="/groups", tags=["Groups"])
 app.include_router(trips.router, prefix="/trips", tags=["Trips"])
 app.include_router(members.router, prefix="/members", tags=["Members"])
 app.include_router(invites.router, prefix="/invites", tags=["Invites"])
+app.include_router(messages.router, prefix="/messages", tags=["Messages"])

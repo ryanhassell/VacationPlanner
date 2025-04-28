@@ -9,9 +9,9 @@ class InviteResponse(BaseModel):
     invited_by: str
     role: RoleEnum
 
+
 class InviteCreate(BaseModel):
     uid: str
     gid: int
     invited_by: str
     role: RoleEnum
-

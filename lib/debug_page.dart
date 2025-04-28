@@ -4,7 +4,8 @@ import 'login_page.dart';
 import 'create_group_page.dart';
 import 'view_groups_page.dart';
 import 'profile_info_page.dart';
-import 'create_random_trip.dart'; // Import the new trip page
+import 'create_random_trip.dart';
+import 'chat_page.dart'; // <-- ADD THIS IMPORT
 
 class DebugPage extends StatelessWidget {
   final String uid;
@@ -72,19 +73,35 @@ class DebugPage extends StatelessWidget {
                 child: const Text('Profile Info'),
               ),
               const SizedBox(height: 10),
-              // New button to navigate to the Trip page
               ElevatedButton(
                 onPressed: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => const CreateRandomTripPage(
-                        group: 1, uid: "1"
+                        group: 1, uid: "1",
                       ),
                     ),
                   );
                 },
                 child: const Text('Generate Trip'),
+              ),
+              const SizedBox(height: 10),
+              // New button to navigate to ChatPage
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ChatPage(
+                        uid: uid,
+                        gid: 1,
+                        name: "Ryan",
+                      ),
+                    ),
+                  );
+                },
+                child: const Text('Go to Chat'),
               ),
             ],
           ),
