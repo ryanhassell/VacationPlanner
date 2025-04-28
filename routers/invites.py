@@ -55,3 +55,15 @@ def list_invites_by_user(uid: str, db: Session = Depends(get_db)):
     if not invites:
         return []
     return invites
+
+@router.delete("/{uid}/{gid}", status_code=200)
+async def delete_invite(uid: str, gid: int, db: Session = Depends(get_db)):
+    invite = db.query(Invite).filter(Invite.uid == uid, Invite.gid == gid).first()
+
+    if not invite:
+        raise HTTPException(status_code=404, detail="Invite not found")
+
+    db.delete(invite)
+    db.commit()
+
+    return {"message": "Invite successfully deleted"}

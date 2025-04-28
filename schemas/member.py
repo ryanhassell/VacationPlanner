@@ -20,3 +20,6 @@ class MemberCreate(BaseModel):
     uid: str
     gid: int
     role: RoleEnum
+
+class UpdateRoleRequest(BaseModel):
+    role: str

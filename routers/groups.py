@@ -63,7 +63,7 @@ async def get_group_by_gid(gid: int, db: Session = Depends(get_db)):
         "group_type": group.group_type
     }
 
-@router.get("/groups/{uid}", response_model=list[GroupResponse])
+@router.get("/{uid}", response_model=list[GroupResponse])
 async def get_groups_by_uid(uid: str, db: Session = Depends(get_db)):
     groups = db.query(Group).filter(Group.owner == uid).all()
     return groups

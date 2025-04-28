@@ -22,14 +22,44 @@ class _ViewGroupsPageState extends State<ViewGroupsPage> {
   }
 
   Future<List<Map<String, dynamic>>> fetchUserGroups(String uid) async {
-    final url = Uri.parse('http://$ip/groups/identify/$uid');
+    final url = Uri.parse('http://$ip/members/by_uid/$uid');  // Your existing endpoint
     final response = await http.get(url);
 
     if (response.statusCode == 200) {
-      final List<dynamic> data = jsonDecode(response.body);
-      return data.cast<Map<String, dynamic>>();
+      final List<dynamic> memberData = jsonDecode(response.body);
+      List<Map<String, dynamic>> groups = [];
+
+      // Fetch each group by gid
+      for (var member in memberData) {
+        final gid = member['gid'];
+
+        final groupUrl = Uri.parse('http://$ip/groups/$gid');
+        final groupResponse = await http.get(groupUrl);
+
+        if (groupResponse.statusCode == 200) {
+          final groupData = jsonDecode(groupResponse.body);
+
+          // Check if the group data is a map, add it to the groups list
+          if (groupData is Map<String, dynamic>) {
+            groups.add(groupData);
+          } else if (groupData is List) {
+            // If the response is a list, check each item is a map and add it
+            for (var groupItem in groupData) {
+              if (groupItem is Map<String, dynamic>) {
+                groups.add(groupItem);
+              }
+            }
+          } else {
+            print('Unexpected response format for group: $groupData');
+          }
+        } else {
+          print('Failed to load group data for gid $gid');
+        }
+      }
+
+      return groups;
     } else {
-      throw Exception('Failed to load groups');
+      throw Exception('Failed to load member data');
     }
   }
 
@@ -82,7 +112,7 @@ class _ViewGroupsPageState extends State<ViewGroupsPage> {
                         margin: const EdgeInsets.symmetric(vertical: 8),
                         child: ListTile(
                           title: Text(
-                            group["group_name"],
+                            group["group_name"] ?? 'Unnamed Group',
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 18,
@@ -113,3 +143,5 @@ class _ViewGroupsPageState extends State<ViewGroupsPage> {
     );
   }
 }
+
+

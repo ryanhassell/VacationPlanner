@@ -17,10 +17,13 @@ class _ViewInvitesPageState extends State<ViewInvitesPage> {
   @override
   void initState() {
     super.initState();
+    _loadInvites();
+  }
+
+  void _loadInvites() {
     _invites = _fetchInvites(widget.uid);
   }
 
-  // Fetch invites for the user
   Future<List<dynamic>> _fetchInvites(String uid) async {
     final response = await http.get(Uri.parse("http://$ip/invites/$uid"));
     if (response.statusCode == 200) {
@@ -28,6 +31,64 @@ class _ViewInvitesPageState extends State<ViewInvitesPage> {
     } else {
       throw Exception("Failed to load invites");
     }
+  }
+
+  Future<void> _acceptInvite(Map<String, dynamic> invite) async {
+    final uid = invite['uid'];
+    final gid = invite['gid'];
+    final role = invite['role'];
+
+    final response = await http.post(
+      Uri.parse("http://$ip/members"),
+      headers: {"Content-Type": "application/json"},
+      body: json.encode({
+        "uid": uid,
+        "gid": gid,
+        "role": role,
+      }),
+    );
+      try {
+        await _deleteInvite(uid, gid);
+      } catch (e) {
+        print("Warning: Failed to delete invite after accepting: $e");
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Invite accepted!')),
+      );
+      _refreshInvites();
+  }
+
+  Future<void> _declineInvite(Map<String, dynamic> invite) async {
+    final uid = invite['uid'];
+    final gid = invite['gid'];
+
+    try {
+      await _deleteInvite(uid, gid);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Invite declined.')),
+      );
+      _refreshInvites();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to decline invite: $e')),
+      );
+    }
+  }
+
+  Future<void> _deleteInvite(String uid, int gid) async {
+    final response = await http.delete(
+      Uri.parse("http://$ip/invites/$uid/$gid"),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception("Failed to delete invite");
+    }
+  }
+
+  void _refreshInvites() {
+    setState(() {
+      _loadInvites();
+    });
   }
 
   @override
@@ -51,12 +112,22 @@ class _ViewInvitesPageState extends State<ViewInvitesPage> {
                 final invite = invites[index];
                 return ListTile(
                   title: Text('Invite from ${invite['invited_by']}'),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.check),
-                    onPressed: () {
-                      // Handle accept invite
-                      // You can add logic for accepting invites here.
-                    },
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.check, color: Colors.green),
+                        onPressed: () {
+                          _acceptInvite(invite);
+                        },
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Colors.red),
+                        onPressed: () {
+                          _declineInvite(invite);
+                        },
+                      ),
+                    ],
                   ),
                 );
               },
