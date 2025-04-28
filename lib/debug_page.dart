@@ -94,9 +94,9 @@ class DebugPage extends StatelessWidget {
                     context,
                     MaterialPageRoute(
                       builder: (context) => ChatPage(
-                        uid: uid,
+                        senderUid: uid,
                         gid: 1,
-                        name: "Ryan",
+                        senderName: "Ryan",
                       ),
                     ),
                   );
