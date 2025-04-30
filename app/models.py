@@ -51,6 +51,7 @@ class Trip(Base):
     location_long = Column(Float, nullable=False)
     landmarks = Column(JSONB)  # Save list of landmark dicts here
     uid = Column(String, ForeignKey('users.uid', ondelete='CASCADE'), nullable=False)
+    num_destinations = Column(Integer, nullable=True)
 
 
 class Member(Base):
@@ -91,3 +92,4 @@ class Message(Base):
     sender_name = Column(String, nullable=False)
     text = Column(String, nullable=False)
     timestamp = Column(DateTime, default=datetime.datetime.utcnow)
+    read_by = Column(ARRAY(String), default=[])

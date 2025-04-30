@@ -2,9 +2,9 @@ from datetime import datetime
 
 from pydantic import BaseModel
 
-
 from datetime import datetime
 from pydantic import BaseModel
+
 
 class MessageCreateRequest(BaseModel):
     gid: int
@@ -20,6 +20,7 @@ class MessageResponse(BaseModel):
     sender_name: str
     text: str
     timestamp: datetime
+    read_by: list[str] = []
 
     class Config:
         orm_mode = True

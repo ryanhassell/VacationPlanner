@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:mapbox_gl/mapbox_gl.dart'; // Import Mapbox
-import 'members_list_page.dart';  // Import the MembersPage
-
+import 'package:mapbox_gl/mapbox_gl.dart';
+import 'package:vacation_planner/trip_detail_page.dart';
+import 'create_random_trip.dart';
+import 'custom_trip_page.dart';
+import 'members_list_page.dart';
+import 'chat_page.dart';  // Import the ChatPage
 import 'global_vars.dart';
 
 class GroupManagePage extends StatefulWidget {
@@ -18,15 +21,15 @@ class GroupManagePage extends StatefulWidget {
 
 class _GroupManagePageState extends State<GroupManagePage> {
   Map<String, dynamic>? groupData;
+  Map<String, dynamic>? userData;
   bool isLoading = true;
   String? errorMessage;
 
-  late MapboxMapController mapController; // Mapbox controller for controlling the map
+  late MapboxMapController mapController;
 
   Future<void> fetchGroupDetails() async {
     try {
-      final response =
-      await http.get(Uri.parse('http://$ip/groups/get/${widget.gid}'));
+      final response = await http.get(Uri.parse('http://$ip/groups/get/${widget.gid}'));
 
       if (response.statusCode == 200) {
         setState(() {
@@ -47,6 +50,13 @@ class _GroupManagePageState extends State<GroupManagePage> {
     }
   }
 
+  Future<void> fetchUserData() async {
+    final response = await http.get(Uri.parse("http://$ip/users/${widget.uid}"));
+    if (response.statusCode == 200) {
+      setState(() => userData = json.decode(response.body));
+    }
+  }
+
   void _onMapCreated(MapboxMapController controller) {
     mapController = controller;
   }
@@ -55,8 +65,47 @@ class _GroupManagePageState extends State<GroupManagePage> {
   void initState() {
     super.initState();
     fetchGroupDetails();
+    fetchUserData();
   }
-
+  void _promptTripCreationModal() {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext ctx) {
+        return SafeArea(
+          child: Wrap(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.shuffle),
+                title: const Text('Randomly Generate Trip'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => CreateRandomTripPage(uid: widget.uid, group: widget.gid),
+                    ),
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.create),
+                title: const Text('Create Your Own Trip'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => CustomTripPage(uid: widget.uid, group: 1),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -72,8 +121,7 @@ class _GroupManagePageState extends State<GroupManagePage> {
           children: [
             Text(
               "Group Name: ${groupData!['group_name']}",
-              style: const TextStyle(
-                  fontSize: 20, fontWeight: FontWeight.bold),
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
             Text("Owner: ${groupData!['owner']}"),
@@ -82,12 +130,10 @@ class _GroupManagePageState extends State<GroupManagePage> {
             Text("Latitude: ${groupData!['location_lat']}"),
             Text("Longitude: ${groupData!['location_long']}"),
             const SizedBox(height: 20),
-            // Mapbox Map using the provided latitude and longitude
             SizedBox(
               height: 300,
               child: MapboxMap(
-                accessToken:
-                "sk.eyJ1IjoiY2hlZXNlZnJpZXMiLCJhIjoiY204bmJjc2toMDBnMjJ5cHpkaWQ0aWVldSJ9.j3l4E43PL3P1MKT_KtjUTw", // Replace with your actual Mapbox token
+                accessToken: "YOUR_MAPBOX_TOKEN",
                 initialCameraPosition: CameraPosition(
                   target: LatLng(
                     double.parse(groupData!['location_lat'].toString()),
@@ -99,21 +145,65 @@ class _GroupManagePageState extends State<GroupManagePage> {
               ),
             ),
             const SizedBox(height: 20),
-            // Button to navigate to MembersPage
             ElevatedButton(
               onPressed: () {
-                // Navigate to the MembersPage
                 Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (context) => MembersListPage(
                       uid: widget.uid,
-                      gid: widget.gid.toString(),  // Pass gid to MembersPage
+                      gid: widget.gid.toString(),
                     ),
                   ),
                 );
               },
               child: const Text("View Members"),
+            ),
+            const SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ChatPage(
+                      gid: widget.gid,
+                      senderUid: widget.uid,
+                      senderName: userData?['first_name'] ?? 'User',
+                    ),
+                  ),
+                );
+              },
+              child: const Text("Open Group Chat"),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final tripUrl = Uri.parse("http://$ip/trips/list_trips_by_user/${widget.uid}");
+                final response = await http.get(tripUrl);
+
+                if (response.statusCode == 200) {
+                  final trips = json.decode(response.body);
+                  final groupTrip = trips.firstWhere(
+                        (trip) => trip['group'] == widget.gid,
+                    orElse: () => null,
+                  );
+
+                  if (groupTrip != null) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => TripDetailPage(tripId: groupTrip['trip_id']),
+                      ),
+                    );
+                  } else {
+                    _promptTripCreationModal();
+                  }
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Failed to check group trip.")),
+                  );
+                }
+              },
+              child: const Text("View/Create Group Trip"),
             ),
           ],
         ),

@@ -106,25 +106,20 @@ class _CustomTripPageState extends State<CustomTripPage> {
     }).toList();
 
     final url = Uri.parse('http://$ip/trips/custom_trip'
-        '?group=${widget.group}&uid=${widget.uid}'); // group and uid go in query params
+        '?group=${widget.group}&uid=${widget.uid}&num_destinations=${landmarks.length}');
 
     try {
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
-        body: json.encode(landmarks), // ONLY the list sent in body
+        body: json.encode(landmarks),
       );
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        final tripId = data['trip_id'];
+        final tripId = data['tid'];
 
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => TripDetailPage(tripId: tripId),
-          ),
-        );
+        Navigator.pop(context); // Return to group page
       } else {
         print('Failed to save trip: ${response.body}');
       }
@@ -134,7 +129,6 @@ class _CustomTripPageState extends State<CustomTripPage> {
 
     setState(() => _isSaving = false);
   }
-
 
   @override
   Widget build(BuildContext context) {

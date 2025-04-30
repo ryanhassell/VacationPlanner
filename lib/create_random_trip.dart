@@ -1,5 +1,4 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
@@ -24,10 +23,12 @@ class CreateRandomTripPage extends StatefulWidget {
 class _TripTabPageState extends State<CreateRandomTripPage> with SingleTickerProviderStateMixin {
   bool isLoading = false;
   MapboxMapController? mapController;
-  late CameraPosition _initialPosition;
+  CameraPosition? _initialPosition;
 
   double? currentLat;
   double? currentLong;
+  final TextEditingController _addressController = TextEditingController();
+  List<String> suggestions = [];
 
   final List<String> availableCategories = [
     "Food",
@@ -63,52 +64,62 @@ class _TripTabPageState extends State<CreateRandomTripPage> with SingleTickerPro
       curve: Curves.easeOut,
     ));
     _animationController.forward();
+
+    _addressController.addListener(() {
+      if (_addressController.text.trim().isEmpty) return;
+      _fetchSuggestions(_addressController.text.trim());
+    });
   }
 
-  @override
-  void dispose() {
-    _animationController.dispose();
-    super.dispose();
+  Future<void> _fetchSuggestions(String query) async {
+    final url = Uri.parse(
+      'https://api.mapbox.com/search/searchbox/v1/suggest?q=$query&access_token=$mapboxAccessToken',
+    );
+    final res = await http.get(url);
+    if (res.statusCode == 200) {
+      final data = json.decode(res.body);
+      setState(() {
+        suggestions = List<String>.from(data['suggestions'].map((s) => s['name'] ?? ''));
+      });
+    }
+  }
+
+  Future<void> _useAddress(String query) async {
+    if (query.isEmpty) return;
+    final url = Uri.parse(
+        'https://api.mapbox.com/search/searchbox/v1/forward?q=$query&limit=1&access_token=$mapboxAccessToken');
+    final response = await http.get(url);
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      final coords = data['features'][0]['geometry']['coordinates'];
+      setState(() {
+        currentLong = coords[0];
+        currentLat = coords[1];
+        _initialPosition = CameraPosition(
+          target: LatLng(currentLat!, currentLong!),
+          zoom: 10.0,
+        );
+      });
+      if (mapController != null) {
+        mapController!.animateCamera(CameraUpdate.newLatLng(
+          LatLng(currentLat!, currentLong!),
+        ));
+      }
+    }
   }
 
   Future<void> _determinePosition() async {
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Location services are disabled.")),
-      );
-      return;
-    }
+    if (!serviceEnabled) return;
 
     LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Location permissions are denied.")),
-        );
-        return;
-      }
+      if (permission == LocationPermission.denied) return;
     }
-    if (permission == LocationPermission.deniedForever) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Location permissions are permanently denied.")),
-      );
-      return;
-    }
+    if (permission == LocationPermission.deniedForever) return;
 
     try {
-      Position? lastPosition = await Geolocator.getLastKnownPosition();
-      if (lastPosition != null) {
-        setState(() {
-          currentLat = lastPosition.latitude;
-          currentLong = lastPosition.longitude;
-          _initialPosition = CameraPosition(
-            target: LatLng(currentLat!, currentLong!),
-            zoom: 10.0,
-          );
-        });
-      }
       final Position position = await Geolocator.getCurrentPosition();
       setState(() {
         currentLat = position.latitude;
@@ -123,36 +134,6 @@ class _TripTabPageState extends State<CreateRandomTripPage> with SingleTickerPro
     }
   }
 
-  Widget _buildCategoryButton(String category) {
-    bool isSelected = selectedCategories.contains(category);
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      child: OutlinedButton(
-        style: OutlinedButton.styleFrom(
-          backgroundColor: isSelected ? Colors.blueAccent : Colors.white,
-          side: const BorderSide(color: Colors.blueAccent),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        ),
-        onPressed: () {
-          setState(() {
-            if (isSelected) {
-              selectedCategories.remove(category);
-            } else {
-              selectedCategories.add(category);
-            }
-          });
-        },
-        child: Text(
-          category,
-          style: TextStyle(
-            color: isSelected ? Colors.white : Colors.blueAccent,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
-    );
-  }
-
   Future<void> generateTrip() async {
     if (selectedCategories.length < 3) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -162,14 +143,12 @@ class _TripTabPageState extends State<CreateRandomTripPage> with SingleTickerPro
     }
     if (currentLat == null || currentLong == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Current location not available.")),
+        const SnackBar(content: Text("Location not set.")),
       );
       return;
     }
 
-    setState(() {
-      isLoading = true;
-    });
+    setState(() => isLoading = true);
 
     String landmarkTypes = selectedCategories.join(",");
     final url = Uri.parse(
@@ -188,49 +167,46 @@ class _TripTabPageState extends State<CreateRandomTripPage> with SingleTickerPro
       final response = await http.post(url);
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        final tripId = data['trip_id'];
-
-        setState(() {
-          isLoading = false;
-        });
-
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => TripDetailPage(tripId: tripId),
-          ),
-        );
-    } else {
-        setState(() {
-          isLoading = false;
-        });
+        final tripId = data['tid'];
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Error generating trip")),
+          const SnackBar(content: Text("Trip successfully created!")),
+        );
+        Navigator.pop(context);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Error generating trip.")),
         );
       }
     } catch (e) {
-      setState(() {
-        isLoading = false;
-      });
-      print("Error generating trip: $e");
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text("Error: $e")));
+      print("Error: $e");
+    } finally {
+      setState(() => isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (currentLat == null || currentLong == null) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
-
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Create Random Trip"),
+      appBar: AppBar(title: const Text("Create Random Trip")),
+      bottomNavigationBar: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : SizedBox(
+          width: double.infinity,
+          height: 55,
+          child: ElevatedButton(
+            onPressed: generateTrip,
+            style: ElevatedButton.styleFrom(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text("Generate Trip", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          ),
+        ),
       ),
-      body: SingleChildScrollView(
+      body: _initialPosition == null
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -240,8 +216,10 @@ class _TripTabPageState extends State<CreateRandomTripPage> with SingleTickerPro
                 height: 250,
                 child: MapboxMap(
                   accessToken: mapboxAccessToken,
-                  initialCameraPosition: _initialPosition,
-                  onMapCreated: (controller) {},
+                  initialCameraPosition: _initialPosition!,
+                  onMapCreated: (controller) {
+                    mapController = controller;
+                  },
                 ),
               ),
             ),
@@ -252,6 +230,29 @@ class _TripTabPageState extends State<CreateRandomTripPage> with SingleTickerPro
                 position: _slideAnimation,
                 child: Column(
                   children: [
+                    TextField(
+                      controller: _addressController,
+                      decoration: InputDecoration(
+                        labelText: 'Enter Address (Leave blank to use current location)',
+                        suffixIcon: IconButton(
+                          icon: const Icon(Icons.search),
+                          onPressed: () => _useAddress(_addressController.text),
+                        ),
+                      ),
+                    ),
+                    ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: suggestions.length,
+                      itemBuilder: (context, index) => ListTile(
+                        title: Text(suggestions[index]),
+                        onTap: () {
+                          _addressController.text = suggestions[index];
+                          suggestions.clear();
+                          _useAddress(suggestions[index]);
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 16),
                     Card(
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       elevation: 4,
@@ -280,41 +281,51 @@ class _TripTabPageState extends State<CreateRandomTripPage> with SingleTickerPro
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildSlider("Max Trip Distance:", _maxTripDistance, 1, 50, (value) {
-                              setState(() => _maxTripDistance = value);
-                            }),
+                            _buildSlider("Max Trip Distance:", _maxTripDistance, 1, 50, (v) => setState(() => _maxTripDistance = v)),
                             const SizedBox(height: 16),
-                            _buildSlider("Max Distance Between Landmarks:", _maxInterlandmarkDistance, 1, 20, (value) {
-                              setState(() => _maxInterlandmarkDistance = value);
-                            }),
+                            _buildSlider("Max Distance Between Landmarks:", _maxInterlandmarkDistance, 1, 20, (v) => setState(() => _maxInterlandmarkDistance = v)),
                             const SizedBox(height: 16),
-                            _buildSlider("Number of Destinations:", _numDestinations.toDouble(), 1, 20, (value) {
-                              setState(() => _numDestinations = value.round());
-                            }),
+                            _buildSlider("Number of Destinations:", _numDestinations.toDouble(), 1, 20, (v) => setState(() => _numDestinations = v.round())),
                           ],
                         ),
                       ),
                     ),
-                    const SizedBox(height: 24),
-                    isLoading
-                        ? const CircularProgressIndicator()
-                        : SizedBox(
-                      width: double.infinity,
-                      height: 55,
-                      child: ElevatedButton(
-                        onPressed: generateTrip,
-                        style: ElevatedButton.styleFrom(
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        child: const Text("Generate Trip", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 80),
                   ],
                 ),
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCategoryButton(String category) {
+    bool isSelected = selectedCategories.contains(category);
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      child: OutlinedButton(
+        style: OutlinedButton.styleFrom(
+          backgroundColor: isSelected ? Colors.blueAccent : Colors.white,
+          side: const BorderSide(color: Colors.blueAccent),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        ),
+        onPressed: () {
+          setState(() {
+            if (isSelected) {
+              selectedCategories.remove(category);
+            } else {
+              selectedCategories.add(category);
+            }
+          });
+        },
+        child: Text(
+          category,
+          style: TextStyle(
+            color: isSelected ? Colors.white : Colors.blueAccent,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
     );

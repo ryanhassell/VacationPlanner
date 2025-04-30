@@ -6,7 +6,9 @@ import 'package:vacation_planner/trip_detail_page.dart';
 import 'create_random_trip.dart';
 import 'custom_trip_page.dart';
 import 'global_vars.dart';
-
+//
+// DEPRECATED
+//
 class TripLandingPage extends StatefulWidget {
   final String uid;
   const TripLandingPage({Key? key, required this.uid}) : super(key: key);
@@ -129,7 +131,7 @@ class _TripLandingPageState extends State<TripLandingPage> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => TripDetailPage(tripId: trip['trip_id']),
+                              builder: (_) => TripDetailPage(tripId: trip['tid']),
                             ),
                           );
                         },
@@ -164,7 +166,7 @@ class _TripLandingPageState extends State<TripLandingPage> {
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
                                     Text(
-                                      'Trip ${trip['trip_id']}',
+                                      'Trip ${trip['tid']}',
                                       style: const TextStyle(
                                         fontSize: 18,
                                         fontWeight: FontWeight.bold,

@@ -1,147 +1,164 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:vacation_planner/global_vars.dart';
+import 'package:mapbox_gl/mapbox_gl.dart';
+import 'global_vars.dart';
+import 'create_group_page.dart';
 import 'group_manage_page.dart';
 
-class ViewGroupsPage extends StatefulWidget {
+class GroupTripPage extends StatefulWidget {
   final String uid;
-  const ViewGroupsPage({Key? key, required this.uid}) : super(key: key);
+
+  const GroupTripPage({super.key, required this.uid});
 
   @override
-  State<ViewGroupsPage> createState() => _ViewGroupsPageState();
+  State<GroupTripPage> createState() => _GroupTripPageState();
 }
 
-class _ViewGroupsPageState extends State<ViewGroupsPage> {
-  late Future<List<Map<String, dynamic>>> _groupsFuture;
+class _GroupTripPageState extends State<GroupTripPage> {
+  List<Map<String, dynamic>> _groupsWithTrips = [];
+  List<bool> _mapLoaded = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _groupsFuture = fetchUserGroups(widget.uid);
+    _fetchGroupsWithTrips();
   }
 
-  Future<List<Map<String, dynamic>>> fetchUserGroups(String uid) async {
-    final url = Uri.parse('http://$ip/members/by_uid/$uid');  // Your existing endpoint
-    final response = await http.get(url);
+  Future<void> _fetchGroupsWithTrips() async {
+    setState(() => _isLoading = true);
+    try {
+      final response = await http.get(Uri.parse('http://$ip/members/by_uid/${widget.uid}'));
+      if (response.statusCode == 200) {
+        final List groups = json.decode(response.body);
+        final List<Map<String, dynamic>> combined = [];
 
-    if (response.statusCode == 200) {
-      final List<dynamic> memberData = jsonDecode(response.body);
-      List<Map<String, dynamic>> groups = [];
-
-      // Fetch each group by gid
-      for (var member in memberData) {
-        final gid = member['gid'];
-
-        final groupUrl = Uri.parse('http://$ip/groups/$gid');
-        final groupResponse = await http.get(groupUrl);
-
-        if (groupResponse.statusCode == 200) {
-          final groupData = jsonDecode(groupResponse.body);
-
-          // Check if the group data is a map, add it to the groups list
-          if (groupData is Map<String, dynamic>) {
-            groups.add(groupData);
-          } else if (groupData is List) {
-            // If the response is a list, check each item is a map and add it
-            for (var groupItem in groupData) {
-              if (groupItem is Map<String, dynamic>) {
-                groups.add(groupItem);
-              }
-            }
-          } else {
-            print('Unexpected response format for group: $groupData');
-          }
-        } else {
-          print('Failed to load group data for gid $gid');
+        for (final group in groups) {
+          final tripRes = await http.get(Uri.parse('http://$ip/trips/list_trips_by_group/${group['gid']}'));
+          List trips = tripRes.statusCode == 200 ? json.decode(tripRes.body) : [];
+          combined.add({
+            'group': group,
+            'trip': trips.isNotEmpty ? trips.first : null,
+          });
         }
-      }
 
-      return groups;
-    } else {
-      throw Exception('Failed to load member data');
+        setState(() {
+          _groupsWithTrips = combined;
+          _mapLoaded = List.generate(combined.length, (_) => false);
+        });
+      }
+    } catch (e) {
+      print('Error fetching groups/trips: $e');
+    } finally {
+      setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Column(
-        children: [
-          // Header
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12),
-            color: Colors.white,
-            child: const Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-                Text(
-                  'Your Groups',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: FutureBuilder<List<Map<String, dynamic>>>(
-              future: _groupsFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                } else if (snapshot.hasError) {
-                  return Center(child: Text('Error: ${snapshot.error}'));
-                } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return const Center(child: Text('No groups found.'));
-                }
+      appBar: AppBar(title: const Text('Your Groups')),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : RefreshIndicator(
+        onRefresh: _fetchGroupsWithTrips,
+        child: _groupsWithTrips.isEmpty
+            ? const Center(child: Text('No groups found.'))
+            : ListView.builder(
+          padding: const EdgeInsets.all(8),
+          itemCount: _groupsWithTrips.length,
+          itemBuilder: (context, index) {
+            final group = _groupsWithTrips[index]['group'];
+            final trip = _groupsWithTrips[index]['trip'];
 
-                final groups = snapshot.data!;
+            final groupName = group['group_name'] ?? 'Unnamed Group';
+            final tripLat = trip != null ? trip['location_lat'] ?? 0.0 : 0.0;
+            final tripLong = trip != null ? trip['location_long'] ?? 0.0 : 0.0;
 
-                return RefreshIndicator(
-                  onRefresh: () async {
-                    setState(() {
-                      _groupsFuture = fetchUserGroups(widget.uid);
-                    });
-                  },
-                  child: ListView.builder(
-                    padding: const EdgeInsets.all(16.0),
-                    itemCount: groups.length,
-                    itemBuilder: (context, index) {
-                      final group = groups[index];
-                      return Card(
-                        elevation: 3,
-                        margin: const EdgeInsets.symmetric(vertical: 8),
-                        child: ListTile(
-                          title: Text(
-                            group["group_name"] ?? 'Unnamed Group',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18,
-                            ),
-                          ),
-                          trailing: const Icon(Icons.arrow_forward_ios),
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => GroupManagePage(
-                                  uid: widget.uid,
-                                  gid: group["gid"],
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      );
-                    },
+            return GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => GroupManagePage(uid: widget.uid, gid: group['gid']),
                   ),
-                );
+                ).then((_) => _fetchGroupsWithTrips());
               },
-            ),
-          ),
-        ],
+              child: Card(
+                elevation: 4,
+                margin: const EdgeInsets.symmetric(vertical: 10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(
+                      height: 150,
+                      child: ClipRRect(
+                        borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
+                        child: trip != null
+                            ? Stack(
+                          children: [
+                            MapboxMap(
+                              accessToken: mapboxAccessToken,
+                              initialCameraPosition: CameraPosition(
+                                target: LatLng(tripLat, tripLong),
+                                zoom: 12,
+                              ),
+                              myLocationEnabled: false,
+                              compassEnabled: false,
+                              zoomGesturesEnabled: false,
+                              scrollGesturesEnabled: false,
+                              tiltGesturesEnabled: false,
+                              rotateGesturesEnabled: false,
+                              onMapCreated: (_) {
+                                setState(() => _mapLoaded[index] = true);
+                              },
+                              onStyleLoadedCallback: () {
+                                setState(() => _mapLoaded[index] = true);
+                              },
+                            ),
+                            if (!_mapLoaded[index])
+                              Container(
+                                color: Colors.white.withOpacity(0.7),
+                                child: const Center(child: CircularProgressIndicator()),
+                              ),
+                          ],
+                        )
+                            : Container(
+                          color: Colors.grey[300],
+                          child: const Center(
+                            child: Text("No trip yet", style: TextStyle(fontSize: 16)),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(12.0),
+                      child: Text(
+                        groupName,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => CreateGroupPage(uid: widget.uid)),
+          ).then((_) => _fetchGroupsWithTrips());
+        },
+        icon: const Icon(Icons.group_add),
+        label: const Text('Add Group'),
       ),
     );
   }
 }
-
-

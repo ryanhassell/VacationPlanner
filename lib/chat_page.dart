@@ -41,29 +41,27 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Future<void> fetchMessages() async {
-    try {
-      final response = await http.get(
-        Uri.parse('http://$ip/messages/get_messages/${widget.gid}'),
-      );
+    final response = await http.get(
+      Uri.parse('http://$ip/messages/get_messages/${widget.gid}'),
+    );
 
-      if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body);
-        setState(() {
-          _messages = data.cast<Map<String, dynamic>>();
-        });
-      } else {
-        print('Failed to fetch messages: ${response.body}');
-      }
-    } catch (e) {
-      print('Error fetching messages: $e');
+    if (response.statusCode == 200) {
+      final List<dynamic> data = json.decode(response.body);
+      setState(() {
+        _messages = data.cast<Map<String, dynamic>>();
+      });
+      await markMessagesAsRead();  // Call this after messages load
+    } else {
+      print('Failed to fetch messages: ${response.body}');
     }
   }
+
 
   Future<void> sendMessage() async {
     if (_messageController.text.trim().isEmpty) return;
 
     final body = {
-      "gid": 1,
+      "gid": widget.gid,
       "sender_uid": widget.senderUid,
       "sender_name": widget.senderName,
       "text": _messageController.text.trim(),
@@ -88,6 +86,11 @@ class _ChatPageState extends State<ChatPage> {
     }
   }
 
+  Future<void> markMessagesAsRead() async {
+    await http.post(
+      Uri.parse('http://$ip/messages/mark_read/${widget.gid}/${widget.senderUid}'),
+    );
+  }
 
 
   @override

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'chat_page.dart';
 import 'global_vars.dart';
 import 'trip_landing_page.dart';
 import 'view_groups_page.dart';
@@ -26,7 +27,7 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     _screens = [
       HomeFeedPage(uid: widget.uid),
-      ViewGroupsPage(uid: widget.uid),
+      GroupTripPage(uid: widget.uid),
       TripLandingPage(uid: widget.uid),
       ViewInvitesPage(uid: widget.uid),
     ];
@@ -44,21 +45,6 @@ class _HomePageState extends State<HomePage> {
       body: Stack(
         children: [
           SafeArea(child: _screens[_selectedIndex]),
-          Positioned(
-            right: 10,
-            top: MediaQuery.of(context).size.height * 0.4,
-            child: FloatingActionButton(
-              mini: true,
-              backgroundColor: Colors.redAccent,
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => DebugPage(uid: widget.uid)),
-                );
-              },
-              child: const Icon(Icons.bug_report),
-            ),
-          ),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
@@ -86,92 +72,45 @@ class HomeFeedPage extends StatefulWidget {
 }
 
 class _HomeFeedPageState extends State<HomeFeedPage> {
-  Timer? _inviteTimer;
-  List<dynamic> invites = [];
-  bool loading = false;
-  Map<String, dynamic>? userData;
+  Timer? _messageTimer;
   bool userLoading = true;
-  bool newInvitesAvailable = false;
+  Map<String, dynamic>? userData;
+  Map<String, dynamic>? unreadMessage;
 
   @override
   void initState() {
     super.initState();
     fetchUserData();
-    fetchInvites();
-    startInvitePolling();
-  }
-
-  void startInvitePolling() {
-    _inviteTimer = Timer.periodic(const Duration(seconds: 30), (_) => checkForNewInvites());
+    checkForNewMessages();
+    _messageTimer = Timer.periodic(const Duration(seconds: 15), (_) => checkForNewMessages());
   }
 
   Future<void> fetchUserData() async {
-    try {
-      final response = await http.get(Uri.parse("http://$ip/users/${widget.uid}"));
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (mounted) setState(() => userData = data);
-      }
-    } catch (e) {
-      print("Error fetching user: $e");
+    final response = await http.get(Uri.parse("http://$ip/users/${widget.uid}"));
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      setState(() => userData = data);
     }
     setState(() => userLoading = false);
   }
 
-  Future<void> fetchInvites() async {
-    setState(() => loading = true);
-    try {
-      final response = await http.get(Uri.parse("http://$ip/invites/list_invites_by_user/${widget.uid}"));
-      if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body);
-        if (mounted) {
-          setState(() {
-            invites = data;
-            newInvitesAvailable = false;
-          });
-        }
-      }
-    } catch (e) {
-      print("Error fetching invites: $e");
-    }
-    setState(() => loading = false);
-  }
-
-  Future<void> checkForNewInvites() async {
-    try {
-      final response = await http.get(Uri.parse("http://$ip/invites/list_invites_by_user/${widget.uid}"));
-      if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body);
-        if (mounted && data.length != invites.length) {
-          setState(() => newInvitesAvailable = true);
-        }
-      }
-    } catch (e) {
-      print("Error checking invites: $e");
-    }
-  }
-
-  Future<void> respondToInvite(int inviteId, bool accepted) async {
-    final url = Uri.parse("http://$ip/invites/respond_invite");
-    try {
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({'invite_id': inviteId, 'accepted': accepted}),
-      );
-      if (response.statusCode == 200) {
-        await fetchInvites();
+  Future<void> checkForNewMessages() async {
+    final response = await http.get(Uri.parse("http://$ip/messages/unread/${widget.uid}"));
+    if (response.statusCode == 200) {
+      final List<dynamic> data = json.decode(response.body);
+      if (data.isNotEmpty) {
+        setState(() {
+          unreadMessage = data.first; // Assume API returns first unread message group
+        });
       } else {
-        print('Failed to respond to invite: ${response.body}');
+        setState(() => unreadMessage = null);
       }
-    } catch (e) {
-      print('Error responding to invite: $e');
     }
   }
 
   @override
   void dispose() {
-    _inviteTimer?.cancel();
+    _messageTimer?.cancel();
     super.dispose();
   }
 
@@ -197,17 +136,8 @@ class _HomeFeedPageState extends State<HomeFeedPage> {
                 },
                 child: Row(
                   children: [
-                    Text(
-                      userData?['first_name'] ?? "User",
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
-                    ),
+                    Text(userData?['first_name'] ?? "User", style: const TextStyle(fontSize: 18)),
                     const SizedBox(width: 8),
-                    CircleAvatar(
-                      radius: 30,
-                      backgroundImage: (userData?['profile_image_url'] != null && userData!['profile_image_url'].isNotEmpty)
-                          ? NetworkImage(userData!['profile_image_url'])
-                          : const AssetImage('assets/images/profile_placeholder.png') as ImageProvider,
-                    ),
                   ],
                 ),
               ),
@@ -215,53 +145,34 @@ class _HomeFeedPageState extends State<HomeFeedPage> {
           ),
         ),
         const SizedBox(height: 8),
-        if (newInvitesAvailable)
+        if (unreadMessage != null)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8.0),
             child: MaterialBanner(
-              content: const Text('New invites available! Tap to refresh.'),
+              content: Text('You have unread chat messages in Group (${unreadMessage!['group_name']}).'),
               actions: [
                 TextButton(
-                  onPressed: fetchInvites,
-                  child: const Text('Refresh'),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ChatPage(
+                          gid: unreadMessage!['gid'],
+                          senderUid: widget.uid,
+                          senderName: userData?['first_name'] ?? 'User',
+                        ),
+                      ),
+                    );
+                  },
+                  child: const Text('Open Chat'),
                 ),
               ],
-              backgroundColor: Colors.yellow[700],
+              backgroundColor: Colors.blue[100],
             ),
           ),
         Expanded(
-          child: RefreshIndicator(
-            onRefresh: fetchInvites,
-            child: loading
-                ? const Center(child: CircularProgressIndicator())
-                : invites.isEmpty
-                ? const Center(child: Text("No invites at the moment."))
-                : ListView.builder(
-              itemCount: invites.length,
-              itemBuilder: (context, index) {
-                final invite = invites[index];
-                return Card(
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: ListTile(
-                    title: Text('Group Invite: ${invite['group_name'] ?? 'Unknown Group'}'),
-                    subtitle: Text('From: ${invite['sender_name'] ?? 'Someone'}'),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.check, color: Colors.green),
-                          onPressed: () => respondToInvite(invite['invite_id'], true),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.close, color: Colors.red),
-                          onPressed: () => respondToInvite(invite['invite_id'], false),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
+          child: Center(
+            child: Text('No new notifications.', style: TextStyle(color: Colors.grey[600])),
           ),
         ),
       ],

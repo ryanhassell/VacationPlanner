@@ -189,7 +189,7 @@ class _TripDetailPageState extends State<TripDetailPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text("Trip #${tripData?['trip_id'] ?? ''}"),
+        title: Text("Trip #${tripData?['tid'] ?? ''}"),
         actions: [
           IconButton(
             icon: const Icon(Icons.edit),

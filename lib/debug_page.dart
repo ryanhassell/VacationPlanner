@@ -57,7 +57,7 @@ class DebugPage extends StatelessWidget {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => ViewGroupsPage(uid: uid)),
+                    MaterialPageRoute(builder: (context) => GroupTripPage(uid: uid)),
                   );
                 },
                 child: const Text('View Groups'),

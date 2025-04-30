@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from datetime import datetime
 
 from app.global_vars import DB_USERNAME, DB_PASSWORD, DB_HOST, DB_NAME
-from app.models import Message, Base
+from app.models import Message, Base, Group
 from schemas.message import MessageResponse, MessageCreateRequest
 
 # Define your connection string
@@ -51,3 +51,26 @@ def get_messages(gid: int, db: Session = Depends(get_db)):
     messages = db.query(Message).filter(Message.gid == gid).order_by(Message.timestamp).all()
     return messages
 
+
+# Endpoint to get groups with unread messages
+@router.get("/unread/{uid}")
+def get_unread_groups(uid: str, db: Session = Depends(get_db)):
+    unread_gids = (
+        db.query(Message.gid)
+        .filter(~Message.read_by.any(uid))
+        .distinct()
+        .all()
+    )
+    gids = [gid for (gid,) in unread_gids]
+    groups = db.query(Group).filter(Group.gid.in_(gids)).all()
+    return [{"gid": group.gid, "group_name": group.group_name} for group in groups]
+
+
+# Endpoint to mark messages as read in a group
+@router.post("/mark_read/{gid}/{uid}")
+def mark_messages_as_read(gid: int, uid: str, db: Session = Depends(get_db)):
+    messages = db.query(Message).filter(Message.gid == gid, ~Message.read_by.any(uid)).all()
+    for message in messages:
+        message.read_by.append(uid)
+    db.commit()
+    return {"status": "messages marked as read"}

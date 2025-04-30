@@ -28,9 +28,11 @@ class TripResponse(BaseModel):
     location_long: float
     landmarks: List[Landmark]
     uid: str
+    num_destinations: int
 
     class Config:
         arbitrary_types_allowed = True
+        orm_mode = True
 
 
 class TripSummaryResponse(BaseModel):
@@ -38,3 +40,34 @@ class TripSummaryResponse(BaseModel):
     group: int
     location_lat: float
     location_long: float
+    num_destinations: int
+
+    class Config:
+        orm_mode = True
+
+
+class CustomTripResponse(BaseModel):
+    trip_id: int
+    group: int
+    location_lat: float
+    location_long: float
+    landmarks: List[Landmark]
+    uid: str
+
+    class Config:
+        arbitrary_types_allowed = True
+        orm_mode = True
+
+
+class AlternateTripResponse(BaseModel):
+    tid: int
+    group: int
+    location_lat: float
+    location_long: float
+    landmarks: List[Landmark]
+    uid: str
+    num_destinations: int
+
+    class Config:
+        arbitrary_types_allowed = True
+        orm_mode = True
