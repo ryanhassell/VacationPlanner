@@ -38,12 +38,14 @@ def send_message(message: MessageCreateRequest, db: Session = Depends(get_db)):
         sender_uid=message.sender_uid,
         sender_name=message.sender_name,
         text=message.text,
-        timestamp=message.timestamp
+        timestamp=message.timestamp,
+        read_by=[message.sender_uid]
     )
     db.add(db_message)
     db.commit()
     db.refresh(db_message)
     return db_message
+
 
 
 @router.get("/get_messages/{gid}", response_model=List[MessageResponse])
@@ -66,11 +68,16 @@ def get_unread_groups(uid: str, db: Session = Depends(get_db)):
     return [{"gid": group.gid, "group_name": group.group_name} for group in groups]
 
 
-# Endpoint to mark messages as read in a group
+from sqlalchemy.orm.attributes import flag_modified
+
 @router.post("/mark_read/{gid}/{uid}")
-def mark_messages_as_read(gid: int, uid: str, db: Session = Depends(get_db)):
-    messages = db.query(Message).filter(Message.gid == gid, ~Message.read_by.any(uid)).all()
-    for message in messages:
-        message.read_by.append(uid)
+def mark_read(gid: int, uid: str, db: Session = Depends(get_db)):
+    messages = db.query(Message).filter(Message.gid == gid).all()
+    for msg in messages:
+        if not msg.read_by:
+            msg.read_by = []
+        if uid not in msg.read_by:
+            msg.read_by.append(uid)
+            flag_modified(msg, "read_by")  # <- This tells SQLAlchemy the field changed
     db.commit()
-    return {"status": "messages marked as read"}
+    return {"status": "read updated"}

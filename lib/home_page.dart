@@ -28,8 +28,8 @@ class _HomePageState extends State<HomePage> {
     _screens = [
       HomeFeedPage(uid: widget.uid),
       GroupTripPage(uid: widget.uid),
-      TripLandingPage(uid: widget.uid),
       ViewInvitesPage(uid: widget.uid),
+      ProfileInfoPage(uid: widget.uid)
     ];
   }
 
@@ -55,8 +55,8 @@ class _HomePageState extends State<HomePage> {
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
           BottomNavigationBarItem(icon: Icon(Icons.group), label: 'Groups'),
-          BottomNavigationBarItem(icon: Icon(Icons.card_travel), label: 'Trips'),
           BottomNavigationBarItem(icon: Icon(Icons.mail), label: 'Invites'),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],
       ),
     );
