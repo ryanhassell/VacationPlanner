@@ -50,12 +50,11 @@ class _ChatPageState extends State<ChatPage> {
       setState(() {
         _messages = data.cast<Map<String, dynamic>>();
       });
-      await markMessagesAsRead();  // Call this after messages load
+      await markMessagesAsRead();  // Ensure read_by gets updated
     } else {
       print('Failed to fetch messages: ${response.body}');
     }
   }
-
 
   Future<void> sendMessage() async {
     if (_messageController.text.trim().isEmpty) return;
@@ -87,9 +86,20 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Future<void> markMessagesAsRead() async {
-    await http.post(
-      Uri.parse('http://$ip/messages/mark_read/${widget.gid}/${widget.senderUid}'),
-    );
+    print('Marking messages as read...');
+    try {
+      final response = await http.post(
+        Uri.parse('http://$ip/messages/mark_read/${widget.gid}/${widget.senderUid}'),
+      );
+
+      print("Mark read status: ${response.statusCode} - ${response.body}");
+
+      if (response.statusCode != 200) {
+        print("Failed to mark messages as read: ${response.body}");
+      }
+    } catch (e) {
+      print("Error marking messages as read: $e");
+    }
   }
 
 
