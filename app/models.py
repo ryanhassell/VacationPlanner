@@ -37,8 +37,8 @@ class Group(Base):
     gid = Column(Integer, primary_key=True, index=True)
     owner = Column(String)
     group_name = Column(String)
-    location_lat = Column(Double)
-    location_long = Column(Double)
+    #location_lat = Column(Double)
+    #location_long = Column(Double)
     group_type = Column(Enum(GroupTypeEnum, name="group_type"))
 
 

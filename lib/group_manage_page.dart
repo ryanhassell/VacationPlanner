@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:mapbox_gl/mapbox_gl.dart';
 import 'package:vacation_planner/trip_detail_page.dart';
 import 'create_random_trip.dart';
 import 'custom_trip_page.dart';
 import 'members_list_page.dart';
-import 'chat_page.dart';  // Import the ChatPage
+import 'chat_page.dart';
 import 'global_vars.dart';
 
 class GroupManagePage extends StatefulWidget {
@@ -25,15 +24,33 @@ class _GroupManagePageState extends State<GroupManagePage> {
   bool isLoading = true;
   String? errorMessage;
 
-  late MapboxMapController mapController;
+  @override
+  void initState() {
+    super.initState();
+    fetchGroupDetails();
+    fetchUserData();
+  }
 
   Future<void> fetchGroupDetails() async {
     try {
-      final response = await http.get(Uri.parse('http://$ip/groups/get/${widget.gid}'));
+      final groupRes = await http.get(Uri.parse('http://$ip/groups/get/${widget.gid}'));
 
-      if (response.statusCode == 200) {
+      if (groupRes.statusCode == 200) {
+        final group = jsonDecode(groupRes.body);
+        final ownerId = group['owner'];
+
+        // Fetch owner's first name
+        final userRes = await http.get(Uri.parse('http://$ip/users/$ownerId'));
+
+        if (userRes.statusCode == 200) {
+          final ownerData = jsonDecode(userRes.body);
+          group['owner_name'] = ownerData['first_name'];
+        } else {
+          group['owner_name'] = ownerId;
+        }
+
         setState(() {
-          groupData = jsonDecode(response.body);
+          groupData = group;
           isLoading = false;
         });
       } else {
@@ -57,16 +74,6 @@ class _GroupManagePageState extends State<GroupManagePage> {
     }
   }
 
-  void _onMapCreated(MapboxMapController controller) {
-    mapController = controller;
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    fetchGroupDetails();
-    fetchUserData();
-  }
   void _promptTripCreationModal() {
     showModalBottomSheet(
       context: context,
@@ -95,7 +102,7 @@ class _GroupManagePageState extends State<GroupManagePage> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => CustomTripPage(uid: widget.uid, group: 1),
+                      builder: (_) => CustomTripPage(uid: widget.uid, group: widget.gid),
                     ),
                   );
                 },
@@ -106,6 +113,7 @@ class _GroupManagePageState extends State<GroupManagePage> {
       },
     );
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -124,26 +132,8 @@ class _GroupManagePageState extends State<GroupManagePage> {
               style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
-            Text("Owner: ${groupData!['owner']}"),
+            Text("Owner: ${groupData!['owner_name']}"),
             Text("Type: ${groupData!['group_type']}"),
-            const SizedBox(height: 10),
-            Text("Latitude: ${groupData!['location_lat']}"),
-            Text("Longitude: ${groupData!['location_long']}"),
-            const SizedBox(height: 20),
-            SizedBox(
-              height: 300,
-              child: MapboxMap(
-                accessToken: "YOUR_MAPBOX_TOKEN",
-                initialCameraPosition: CameraPosition(
-                  target: LatLng(
-                    double.parse(groupData!['location_lat'].toString()),
-                    double.parse(groupData!['location_long'].toString()),
-                  ),
-                  zoom: 10.0,
-                ),
-                onMapCreated: _onMapCreated,
-              ),
-            ),
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: () {

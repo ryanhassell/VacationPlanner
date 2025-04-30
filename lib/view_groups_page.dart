@@ -35,10 +35,24 @@ class _GroupTripPageState extends State<GroupTripPage> {
         final List<Map<String, dynamic>> combined = [];
 
         for (final group in groups) {
-          final tripRes = await http.get(Uri.parse('http://$ip/trips/list_trips_by_group/${group['gid']}'));
+          final gid = group['gid'];
+
+          // Fetch group details to get the group name
+          final groupDetailRes = await http.get(Uri.parse('http://$ip/groups/$gid'));
+          Map<String, dynamic>? groupDetails;
+          if (groupDetailRes.statusCode == 200) {
+            final decoded = json.decode(groupDetailRes.body);
+            if (decoded is List && decoded.isNotEmpty) {
+              groupDetails = decoded.first;
+            }
+          }
+
+          // Fetch trip details
+          final tripRes = await http.get(Uri.parse('http://$ip/trips/list_trips_by_group/$gid'));
           List trips = tripRes.statusCode == 200 ? json.decode(tripRes.body) : [];
+
           combined.add({
-            'group': group,
+            'group': groupDetails ?? {'gid': gid, 'group_name': 'Unnamed Group'},
             'trip': trips.isNotEmpty ? trips.first : null,
           });
         }

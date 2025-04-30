@@ -31,7 +31,7 @@ def get_db():
 # API that gets a list of all the groups in the database
 @router.get("/{gid}", response_model=list[GroupResponse])
 async def get_group_by_gid(gid: int, db: Session = Depends(get_db)):
-    groups = db.query(Group).filter(Group.gid == gid)
+    groups = db.query(Group).filter(Group.gid == gid).all()
     return groups
 
 
@@ -46,8 +46,8 @@ async def get_group_by_gid(gid: int, db: Session = Depends(get_db)):
         Group.gid,
         Group.owner,
         Group.group_name,
-        Group.location_lat,
-        Group.location_long,
+        #Group.location_lat,
+        #Group.location_long,
         Group.group_type
     ).filter(Group.gid == gid).first()
 
@@ -58,8 +58,8 @@ async def get_group_by_gid(gid: int, db: Session = Depends(get_db)):
         "gid": group.gid,
         "owner": group.owner,
         "group_name": group.group_name,
-        "location_lat": group.location_lat,
-        "location_long": group.location_long,
+        #"location_lat": group.location_lat,
+        #"location_long": group.location_long,
         "group_type": group.group_type
     }
 
@@ -79,8 +79,8 @@ async def create_group(group: GroupCreate, db: Session = Depends(get_db)):
     new_group = Group(
         owner=group.owner,
         group_name=group.group_name,
-        location_lat=group.location_lat,
-        location_long=group.location_long,
+        #location_lat=group.location_lat,
+        #location_long=group.location_long,
         group_type=group.group_type
     )
     db.add(new_group)

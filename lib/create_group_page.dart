@@ -14,10 +14,7 @@ class CreateGroupPage extends StatefulWidget {
 
 class _CreateGroupPageState extends State<CreateGroupPage> {
   final TextEditingController _groupNameController = TextEditingController();
-  final TextEditingController _longitudeController = TextEditingController();
-  final TextEditingController _latitudeController = TextEditingController();
   String _selectedGroupType = 'Planned';
-
 
   Future<void> _createGroup() async {
     const String apiUrl = 'http://$ip/groups';
@@ -28,19 +25,14 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
       body: jsonEncode({
         'owner': widget.uid,
         'group_name': _groupNameController.text,
-        'location_long': _longitudeController.text,
-        'location_lat': _latitudeController.text,
-        'group_type': _selectedGroupType
+        'group_type': _selectedGroupType,
       }),
     );
 
     if (response.statusCode == 200) {
       final responseData = jsonDecode(response.body);
       final int gid = responseData['gid'];
-      print(gid);
-      print(responseData['gid']);
 
-      // Call _createMember with the returned group id
       await _createMember(gid);
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -92,32 +84,14 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
                 border: OutlineInputBorder(),
               ),
             ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: _longitudeController,
-              decoration: InputDecoration(
-                labelText: 'Longitude',
-                border: OutlineInputBorder(),
-              ),
-              keyboardType: TextInputType.number,
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: _latitudeController,
-              decoration: InputDecoration(
-                labelText: 'Latitude',
-                border: OutlineInputBorder(),
-              ),
-              keyboardType: TextInputType.number,
-            ),
             const SizedBox(height: 20),
             DropdownButtonFormField<String>(
               value: _selectedGroupType,
               items: ['Planned', 'Random']
                   .map((type) => DropdownMenuItem(
-                value: type,
-                child: Text(type),
-              ))
+                        value: type,
+                        child: Text(type),
+                      ))
                   .toList(),
               onChanged: (value) {
                 setState(() {
@@ -129,7 +103,7 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
                 border: OutlineInputBorder(),
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 20),
             ElevatedButton(
               onPressed: _createGroup,
               child: const Text('Create Group'),

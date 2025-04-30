@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'global_vars.dart'; // Contains your 'ip' variable
+import 'global_vars.dart';
 
 class ViewInvitesPage extends StatefulWidget {
   final String uid;
@@ -12,7 +12,7 @@ class ViewInvitesPage extends StatefulWidget {
 }
 
 class _ViewInvitesPageState extends State<ViewInvitesPage> {
-  late Future<List<dynamic>> _invites;
+  late Future<List<Map<String, dynamic>>> _invites;
 
   @override
   void initState() {
@@ -21,16 +21,35 @@ class _ViewInvitesPageState extends State<ViewInvitesPage> {
   }
 
   void _loadInvites() {
-    _invites = _fetchInvites(widget.uid);
+    _invites = _fetchInvitesWithUserNames(widget.uid);
   }
 
-  Future<List<dynamic>> _fetchInvites(String uid) async {
+  Future<List<Map<String, dynamic>>> _fetchInvitesWithUserNames(String uid) async {
     final response = await http.get(Uri.parse("http://$ip/invites/$uid"));
-    if (response.statusCode == 200) {
-      return json.decode(response.body) as List<dynamic>;
-    } else {
+
+    if (response.statusCode != 200) {
       throw Exception("Failed to load invites");
     }
+
+    final invites = json.decode(response.body) as List<dynamic>;
+
+    // Fetch first_name and last_name for each invited_by
+    for (var invite in invites) {
+      final inviterId = invite['invited_by'];
+      try {
+        final inviterRes = await http.get(Uri.parse("http://$ip/users/$inviterId"));
+        if (inviterRes.statusCode == 200) {
+          final inviterData = json.decode(inviterRes.body);
+          invite['inviter_name'] = '${inviterData['first_name']} ${inviterData['last_name']}';
+        } else {
+          invite['inviter_name'] = inviterId;
+        }
+      } catch (_) {
+        invite['inviter_name'] = inviterId;
+      }
+    }
+
+    return invites.cast<Map<String, dynamic>>();
   }
 
   Future<void> _acceptInvite(Map<String, dynamic> invite) async {
@@ -41,21 +60,19 @@ class _ViewInvitesPageState extends State<ViewInvitesPage> {
     final response = await http.post(
       Uri.parse("http://$ip/members"),
       headers: {"Content-Type": "application/json"},
-      body: json.encode({
-        "uid": uid,
-        "gid": gid,
-        "role": role,
-      }),
+      body: json.encode({"uid": uid, "gid": gid, "role": role}),
     );
-      try {
-        await _deleteInvite(uid, gid);
-      } catch (e) {
-        print("Warning: Failed to delete invite after accepting: $e");
-      }
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Invite accepted!')),
-      );
-      _refreshInvites();
+
+    try {
+      await _deleteInvite(uid, gid);
+    } catch (e) {
+      print("Warning: Failed to delete invite after accepting: $e");
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Invite accepted!')),
+    );
+    _refreshInvites();
   }
 
   Future<void> _declineInvite(Map<String, dynamic> invite) async {
@@ -95,7 +112,7 @@ class _ViewInvitesPageState extends State<ViewInvitesPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Your Invites')),
-      body: FutureBuilder<List<dynamic>>(
+      body: FutureBuilder<List<Map<String, dynamic>>>(
         future: _invites,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -111,21 +128,17 @@ class _ViewInvitesPageState extends State<ViewInvitesPage> {
               itemBuilder: (context, index) {
                 final invite = invites[index];
                 return ListTile(
-                  title: Text('Invite from ${invite['invited_by']}'),
+                  title: Text('Invite from ${invite['inviter_name']}'),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       IconButton(
                         icon: const Icon(Icons.check, color: Colors.green),
-                        onPressed: () {
-                          _acceptInvite(invite);
-                        },
+                        onPressed: () => _acceptInvite(invite),
                       ),
                       IconButton(
                         icon: const Icon(Icons.close, color: Colors.red),
-                        onPressed: () {
-                          _declineInvite(invite);
-                        },
+                        onPressed: () => _declineInvite(invite),
                       ),
                     ],
                   ),
@@ -138,3 +151,4 @@ class _ViewInvitesPageState extends State<ViewInvitesPage> {
     );
   }
 }
+
