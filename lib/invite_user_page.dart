@@ -4,8 +4,8 @@ import 'dart:convert';
 import 'global_vars.dart';
 
 class InviteUserPage extends StatefulWidget {
-  final String uid; // Inviter's UID
-  final int gid; // Group ID
+  final String uid;
+  final int gid;
 
   const InviteUserPage({super.key, required this.uid, required this.gid});
 
@@ -27,7 +27,7 @@ class _InviteUserPageState extends State<InviteUserPage> {
     setState(() => _isSubmitting = true);
 
     try {
-      // Step 1: Lookup UID by email
+      // lookup uid by email
       final lookupUrl = Uri.parse('http://$ip/users/invite/id/$email');
       final lookupResponse = await http.get(lookupUrl);
 
@@ -38,7 +38,7 @@ class _InviteUserPageState extends State<InviteUserPage> {
       final userJson = jsonDecode(lookupResponse.body);
       final invitedUid = userJson['uid'];
 
-      // Step 2: Submit the invite
+      // submit the invite
       final inviteUrl = Uri.parse('http://$ip/invites');
       final inviteBody = {
         'uid': invitedUid,         // The user being invited
@@ -53,6 +53,7 @@ class _InviteUserPageState extends State<InviteUserPage> {
         body: jsonEncode(inviteBody),
       );
 
+      //checks if invite properly sent
       if (inviteResponse.statusCode == 200) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Invitation sent!')),
@@ -83,7 +84,7 @@ class _InviteUserPageState extends State<InviteUserPage> {
             children: [
               TextFormField(
                 controller: _emailController,
-                decoration: const InputDecoration(labelText: 'User Email'),
+                decoration: const InputDecoration(labelText: 'User Email'), //makes input for email
                 validator: (value) {
                   if (value == null || value.isEmpty) return 'Email is required';
                   final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
@@ -92,7 +93,7 @@ class _InviteUserPageState extends State<InviteUserPage> {
                 },
               ),
               const SizedBox(height: 20),
-              DropdownButtonFormField<String>(
+              DropdownButtonFormField<String>( //select role u want invited member to have
                 value: _selectedRole,
                 items: const [
                   DropdownMenuItem(value: 'Member', child: Text('Member')),
@@ -102,7 +103,7 @@ class _InviteUserPageState extends State<InviteUserPage> {
                 decoration: const InputDecoration(labelText: 'Role'),
               ),
               const SizedBox(height: 30),
-              ElevatedButton.icon(
+              ElevatedButton.icon( //press to submite the invite
                 onPressed: _isSubmitting ? null : _submitInvite,
                 icon: const Icon(Icons.send),
                 label: Text(_isSubmitting ? 'Sending...' : 'Send Invite'),

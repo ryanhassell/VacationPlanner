@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-
 import 'global_vars.dart';
 
 class CreateGroupPage extends StatefulWidget {
   final String uid;
+
   const CreateGroupPage({super.key, required this.uid});
 
   @override
@@ -29,23 +29,27 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
       }),
     );
 
+    // If group creation is successful
     if (response.statusCode == 200) {
       final responseData = jsonDecode(response.body);
       final int gid = responseData['gid'];
 
-      await _createMember(gid);
+      await _createMember(gid); // add the user as a member of the new group
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Group and member created successfully!')),
       );
-      Navigator.pop(context);
+
+      Navigator.pop(context); // return to previous screen
     } else {
+      // Show error if creation fails
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error: ${response.body}')),
       );
     }
   }
 
+  // adds the creator as a member
   Future<void> _createMember(int gid) async {
     const String apiUrl = 'http://$ip/members';
 
@@ -55,11 +59,12 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
       body: jsonEncode({
         'uid': widget.uid,
         'gid': gid,
-        'role': "Owner",
+        'role': "Owner", // assign the user as the groups owner
       }),
     );
 
     if (response.statusCode != 200) {
+      // error check
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error creating member: ${response.body}')),
       );
@@ -70,13 +75,14 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Create Group'),
+        title: const Text('Create Group'), // Title in app bar
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            // input for group name
             TextField(
               controller: _groupNameController,
               decoration: InputDecoration(
@@ -85,6 +91,8 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
               ),
             ),
             const SizedBox(height: 20),
+
+            // dropdown to choose planned or random
             DropdownButtonFormField<String>(
               value: _selectedGroupType,
               items: ['Planned', 'Random']
@@ -104,14 +112,18 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
               ),
             ),
             const SizedBox(height: 20),
+
+            // submit button
             ElevatedButton(
               onPressed: _createGroup,
               child: const Text('Create Group'),
             ),
             const SizedBox(height: 20),
+
+            // back button
             ElevatedButton(
               onPressed: () {
-                Navigator.pop(context);
+                Navigator.pop(context); // Go back without creating a group
               },
               child: const Text('Back'),
             ),

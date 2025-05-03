@@ -17,13 +17,15 @@ class _ViewInvitesPageState extends State<ViewInvitesPage> {
   @override
   void initState() {
     super.initState();
-    _loadInvites();
+    _loadInvites(); // load invites when widget initialized
   }
 
+  // helper to load invites
   void _loadInvites() {
     _invites = _fetchInvitesWithUserNames(widget.uid);
   }
 
+  // fetches invite data
   Future<List<Map<String, dynamic>>> _fetchInvitesWithUserNames(String uid) async {
     final response = await http.get(Uri.parse("http://$ip/invites/$uid"));
 
@@ -33,7 +35,7 @@ class _ViewInvitesPageState extends State<ViewInvitesPage> {
 
     final invites = json.decode(response.body) as List<dynamic>;
 
-    // Fetch first_name and last_name for each invited_by
+    // get each inviters name
     for (var invite in invites) {
       final inviterId = invite['invited_by'];
       try {
@@ -52,6 +54,7 @@ class _ViewInvitesPageState extends State<ViewInvitesPage> {
     return invites.cast<Map<String, dynamic>>();
   }
 
+  // accepts invite and adds user to group
   Future<void> _acceptInvite(Map<String, dynamic> invite) async {
     final uid = invite['uid'];
     final gid = invite['gid'];
@@ -75,6 +78,7 @@ class _ViewInvitesPageState extends State<ViewInvitesPage> {
     _refreshInvites();
   }
 
+  // Declines an invite
   Future<void> _declineInvite(Map<String, dynamic> invite) async {
     final uid = invite['uid'];
     final gid = invite['gid'];
@@ -92,6 +96,7 @@ class _ViewInvitesPageState extends State<ViewInvitesPage> {
     }
   }
 
+  // remove an invite
   Future<void> _deleteInvite(String uid, int gid) async {
     final response = await http.delete(
       Uri.parse("http://$ip/invites/$uid/$gid"),
@@ -102,6 +107,7 @@ class _ViewInvitesPageState extends State<ViewInvitesPage> {
     }
   }
 
+  // Reloads the invites list
   void _refreshInvites() {
     setState(() {
       _loadInvites();
@@ -116,11 +122,11 @@ class _ViewInvitesPageState extends State<ViewInvitesPage> {
         future: _invites,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(child: CircularProgressIndicator()); // checks for loading state
           } else if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
+            return Center(child: Text('Error: ${snapshot.error}')); // checks for a error state
           } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text('No invites available.'));
+            return const Center(child: Text('No invites available.')); //  checks for empty state
           } else {
             final invites = snapshot.data!;
             return ListView.builder(
@@ -132,10 +138,12 @@ class _ViewInvitesPageState extends State<ViewInvitesPage> {
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      // Accept button
                       IconButton(
                         icon: const Icon(Icons.check, color: Colors.green),
                         onPressed: () => _acceptInvite(invite),
                       ),
+                      // Decline button
                       IconButton(
                         icon: const Icon(Icons.close, color: Colors.red),
                         onPressed: () => _declineInvite(invite),
@@ -151,4 +159,3 @@ class _ViewInvitesPageState extends State<ViewInvitesPage> {
     );
   }
 }
-

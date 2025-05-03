@@ -31,24 +31,26 @@ def get_db():
     finally:
         db.close()
 
-
+##gets all members within a certain user id
 @router.get("/by_uid/{uid}", response_model=list[MemberResponse])
 async def get_mem_by_uid(uid: str, db: Session = Depends(get_db)):
     members = db.query(Member).filter(Member.uid == uid).all()
     return members
 
 
-##gets all users within a certain group id
+##gets all members within a certain group id
 @router.get("/{gid}", response_model=list[MemberResponse])
 async def get_members_by_gid(gid: int, db: Session = Depends(get_db)):
     members = db.query(Member).filter(Member.gid == gid).all()
     return members
 
+##gets a member with a certain gid and uid
 @router.get("/{gid}/{uid}", response_model=list[MemberResponse])
 async def get_members_by_gid(gid: int, uid: str, db: Session = Depends(get_db)):
     members = db.query(Member).filter(Member.gid == gid, Member.uid == uid).all()  # Fixed this line
     return members
 
+##deletes a member with a certain gid and uid
 @router.delete("/{gid}/{uid}", status_code=200)
 async def delete_member(uid: str, gid: int, db: Session = Depends(get_db)):
     invite = db.query(Member).filter(Member.uid == uid, Member.gid == gid).first()
@@ -61,7 +63,7 @@ async def delete_member(uid: str, gid: int, db: Session = Depends(get_db)):
 
     return {"message": "Invite successfully deleted"}
 
-##Create a member
+##Create a new member
 @router.post("", response_model=MemberCreate)
 async def create_group(member: MemberCreate, db: Session = Depends(get_db)):
     # Create a new group in the database
@@ -74,6 +76,8 @@ async def create_group(member: MemberCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_member)
     return new_member
+
+#update a member based on gid and uid
 @router.put("/{gid}/{uid}", response_model=MemberResponse)
 def update_role(
     gid: int,

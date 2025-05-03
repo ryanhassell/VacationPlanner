@@ -21,7 +21,7 @@ from schemas.member import RoleEnum
 
 Base = declarative_base()
 
-
+#base model table for users
 class User(Base):
     __tablename__ = "users"
     uid = Column(String, primary_key=True, index=True)
@@ -31,17 +31,15 @@ class User(Base):
     phone_number = Column(String)
     profile_image_url = Column(String)
 
-
+#base model table for groups
 class Group(Base):
     __tablename__ = "groups"
     gid = Column(Integer, primary_key=True, index=True)
     owner = Column(String)
     group_name = Column(String)
-    #location_lat = Column(Double)
-    #location_long = Column(Double)
     group_type = Column(Enum(GroupTypeEnum, name="group_type"))
 
-
+#base model table for trips
 class Trip(Base):
     __tablename__ = "trips"
 
@@ -53,7 +51,7 @@ class Trip(Base):
     uid = Column(String, ForeignKey('users.uid', ondelete='CASCADE'), nullable=False)
     num_destinations = Column(Integer, nullable=True)
 
-
+#base model table for members
 class Member(Base):
     __tablename__ = "members"
     uid = Column(String, ForeignKey('users.uid', ondelete='CASCADE'), primary_key=True)
@@ -67,7 +65,7 @@ class Member(Base):
         UniqueConstraint('uid', 'gid', name='_uid_gid_uc'),
     )
 
-
+#base model table for invites
 class Invite(Base):
     __tablename__ = "invites"
     uid = Column(String, ForeignKey('users.uid', ondelete='CASCADE'), primary_key=True)
@@ -82,7 +80,7 @@ class Invite(Base):
         UniqueConstraint('uid', 'gid', name='_uid_gid_inv'),
     )
 
-
+#base model table for messages
 class Message(Base):
     __tablename__ = "messages"
 

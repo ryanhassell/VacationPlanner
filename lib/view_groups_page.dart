@@ -26,6 +26,7 @@ class _GroupTripPageState extends State<GroupTripPage> {
     _fetchGroupsWithTrips();
   }
 
+  //used in order to get group info as well as trip info attached to that group
   Future<void> _fetchGroupsWithTrips() async {
     setState(() => _isLoading = true);
     try {
@@ -37,7 +38,7 @@ class _GroupTripPageState extends State<GroupTripPage> {
         for (final group in groups) {
           final gid = group['gid'];
 
-          // Fetch group details to get the group name
+          //fastAPI used to grab group ids
           final groupDetailRes = await http.get(Uri.parse('http://$ip/groups/$gid'));
           Map<String, dynamic>? groupDetails;
           if (groupDetailRes.statusCode == 200) {
@@ -47,7 +48,7 @@ class _GroupTripPageState extends State<GroupTripPage> {
             }
           }
 
-          // Fetch trip details
+          //fastAPI used to find trip info
           final tripRes = await http.get(Uri.parse('http://$ip/trips/list_trips_by_group/$gid'));
           List trips = tripRes.statusCode == 200 ? json.decode(tripRes.body) : [];
 
@@ -69,20 +70,21 @@ class _GroupTripPageState extends State<GroupTripPage> {
     }
   }
 
+  //build of the webpage
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Your Groups')),
+      appBar: AppBar(title: const Text('Your Groups')), //title added
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
         onRefresh: _fetchGroupsWithTrips,
         child: _groupsWithTrips.isEmpty
-            ? const Center(child: Text('No groups found.'))
+            ? const Center(child: Text('No groups found.')) //returns no groups if nothing is found from fetch groups
             : ListView.builder(
           padding: const EdgeInsets.all(8),
           itemCount: _groupsWithTrips.length,
-          itemBuilder: (context, index) {
+          itemBuilder: (context, index) {                              //builds the group and trips that will eventually be displayed
             final group = _groupsWithTrips[index]['group'];
             final trip = _groupsWithTrips[index]['trip'];
 
@@ -95,7 +97,7 @@ class _GroupTripPageState extends State<GroupTripPage> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => GroupManagePage(uid: widget.uid, gid: group['gid']),
+                    builder: (_) => GroupManagePage(uid: widget.uid, gid: group['gid']), //used to go to group manage page based on the user id and gid
                   ),
                 ).then((_) => _fetchGroupsWithTrips());
               },
@@ -112,7 +114,7 @@ class _GroupTripPageState extends State<GroupTripPage> {
                         child: trip != null
                             ? Stack(
                           children: [
-                            MapboxMap(
+                            MapboxMap( //used to create the map that will be displayed
                               accessToken: mapboxAccessToken,
                               initialCameraPosition: CameraPosition(
                                 target: LatLng(tripLat, tripLong),
@@ -163,7 +165,7 @@ class _GroupTripPageState extends State<GroupTripPage> {
           },
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: FloatingActionButton.extended( // creation of a new groups page button
         onPressed: () {
           Navigator.push(
             context,

@@ -34,20 +34,19 @@ async def get_group_by_gid(gid: int, db: Session = Depends(get_db)):
     groups = db.query(Group).filter(Group.gid == gid).all()
     return groups
 
-
+#returns a list of groups
 @router.get("", response_model=list[GroupResponse])
 async def list_groups(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
     groups = db.query(Group).offset(skip).limit(limit).all()
     return groups
 
+#gets group based on gid
 @router.get("/get/{gid}", response_model=TempGroupResponse)
 async def get_group_by_gid(gid: int, db: Session = Depends(get_db)):
     group = db.query(
         Group.gid,
         Group.owner,
         Group.group_name,
-        #Group.location_lat,
-        #Group.location_long,
         Group.group_type
     ).filter(Group.gid == gid).first()
 
@@ -58,29 +57,28 @@ async def get_group_by_gid(gid: int, db: Session = Depends(get_db)):
         "gid": group.gid,
         "owner": group.owner,
         "group_name": group.group_name,
-        #"location_lat": group.location_lat,
-        #"location_long": group.location_long,
         "group_type": group.group_type
     }
 
+#gets groups for everyone under a uid
 @router.get("/{uid}", response_model=list[GroupResponse])
 async def get_groups_by_uid(uid: str, db: Session = Depends(get_db)):
     groups = db.query(Group).filter(Group.owner == uid).all()
     return groups
 
+#gets gids for everyone with a certain uid
 @router.get("/identify/{uid}", response_model=list[IDGroupResponse])
 async def groups_gid_by_uid(uid: str, db: Session = Depends(get_db)):
     groups = db.query(Group.gid, Group.group_name).filter(Group.owner == uid).all()
     return [{"gid": g[0], "group_name": g[1]} for g in groups]
 
+#Creates a new group
 @router.post("", response_model=GroupResponse)
 async def create_group(group: GroupCreate, db: Session = Depends(get_db)):
     # Create a new group in the database
     new_group = Group(
         owner=group.owner,
         group_name=group.group_name,
-        #location_lat=group.location_lat,
-        #location_long=group.location_long,
         group_type=group.group_type
     )
     db.add(new_group)
@@ -88,13 +86,12 @@ async def create_group(group: GroupCreate, db: Session = Depends(get_db)):
     db.refresh(new_group)
     return new_group
 
+#Deletes group object based on gid
 @router.delete("/{gid}", response_model=str)
 async def delete_group(gid: int, db: Session = Depends(get_db)):
-    # Retrieve the Group object by its ID
     group_to_delete = db.query(Group).filter(Group.gid == gid).first()
 
     if group_to_delete:
-        # Delete the Group object
         db.delete(group_to_delete)
         db.commit()
         return f"Group {gid} successfully deleted."
@@ -102,6 +99,7 @@ async def delete_group(gid: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail=f"Group with ID {gid} not found")
 
 
+#Updates Group Information
 @router.put("/{uid}", response_model=GroupResponse)
 async def update_group(
     gid: int, group_data: GroupUpdate, db: Session = Depends(get_db)

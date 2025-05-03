@@ -29,11 +29,13 @@ def get_db():
     finally:
         db.close()
 
+#gets the invites based on uid
 @router.get("/{uid}", response_model=list[InviteResponse])
 async def get_members_by_uid(uid: str, db: Session = Depends(get_db)):
     invites = db.query(Invite).filter(Invite.uid == uid).all()
     return invites
 
+#used to create a new instance of invites
 @router.post("", response_model=InviteCreate)
 async def create_group(invite: InviteCreate, db: Session = Depends(get_db)):
     # Create a new group in the database
@@ -48,7 +50,7 @@ async def create_group(invite: InviteCreate, db: Session = Depends(get_db)):
     db.refresh(new_invite)
     return new_invite
 
-
+#used to get a list of invites based on the users id
 @router.get("/list_invites_by_user/{uid}", response_model=List[InviteResponse])
 def list_invites_by_user(uid: str, db: Session = Depends(get_db)):
     invites = db.query(Invite).filter(Invite.uid == uid).all()
@@ -56,6 +58,7 @@ def list_invites_by_user(uid: str, db: Session = Depends(get_db)):
         return []
     return invites
 
+#gets the invite given the uid and the gid
 @router.delete("/{uid}/{gid}", status_code=200)
 async def delete_invite(uid: str, gid: int, db: Session = Depends(get_db)):
     invite = db.query(Invite).filter(Invite.uid == uid, Invite.gid == gid).first()

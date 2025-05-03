@@ -2,11 +2,11 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'global_vars.dart';
-import 'invite_user_page.dart'; // Check that this import is correct
+import 'invite_user_page.dart';
 
 class MembersListPage extends StatefulWidget {
-  final String uid; // User ID
-  final String gid; // Group ID
+  final String uid; // current user ID
+  final String gid; // current group ID
 
   const MembersListPage({super.key, required this.uid, required this.gid});
 
@@ -22,10 +22,11 @@ class _MembersListPageState extends State<MembersListPage> {
   @override
   void initState() {
     super.initState();
-    _fetchMembers();
-    _fetchCurrentUserRole();
+    _fetchMembers();               // load member list
+    _fetchCurrentUserRole();       // determine current user's role
   }
 
+  // fetch members of the group from the backend
   Future<void> _fetchMembers() async {
     final String apiUrl = 'http://$ip/members/${widget.gid}';
 
@@ -34,8 +35,11 @@ class _MembersListPageState extends State<MembersListPage> {
       print("Fetching members...");
       if (response.statusCode == 200) {
         final List<dynamic> memberList = jsonDecode(response.body);
+
+        // convert each map into member object
         final members = memberList.map((memberJson) => Member.fromMap(memberJson)).toList();
 
+        // fetch user info for each member
         for (var member in members) {
           final userResponse = await _fetchUserDetails(member.uid);
           member.firstName = userResponse.firstName;
@@ -44,7 +48,7 @@ class _MembersListPageState extends State<MembersListPage> {
 
         setState(() {
           _members = members;
-          _isLoading = false; // Stop loading once the data is fetched
+          _isLoading = false;
         });
       } else {
         throw Exception('Failed to load members');
@@ -52,12 +56,13 @@ class _MembersListPageState extends State<MembersListPage> {
     } catch (error) {
       print("Error fetching members: $error");
       setState(() {
-        _isLoading = false; // Stop loading on error
+        _isLoading = false;
       });
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $error')));
     }
   }
 
+  // fetches the users details
   Future<UserMember> _fetchUserDetails(String uid) async {
     final String apiUrl = 'http://$ip/users/$uid';
 
@@ -74,6 +79,7 @@ class _MembersListPageState extends State<MembersListPage> {
     }
   }
 
+  // fetches role of current user in the group
   Future<void> _fetchCurrentUserRole() async {
     final String apiUrl = 'http://$ip/members/${widget.gid}/${widget.uid}';
 
@@ -87,7 +93,7 @@ class _MembersListPageState extends State<MembersListPage> {
           final memberData = decodedBody[0];
           setState(() {
             currentUserRole = memberData['role'];
-            _isLoading = false; // Stop loading once the role is fetched
+            _isLoading = false;
           });
         } else {
           throw Exception('Unexpected response format for role');
@@ -98,108 +104,110 @@ class _MembersListPageState extends State<MembersListPage> {
     } catch (error) {
       print("Error fetching current user role: $error");
       setState(() {
-        _isLoading = false; // Stop loading on error
+        _isLoading = false;
       });
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $error')));
     }
   }
 
+  // admin/owner can edit a member's role
   Future<void> _editRole(Member member) async {
-  if (currentUserRole != 'Admin' && currentUserRole != 'Owner') {
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('You are not authorized to edit roles')));
-    return;
-  }
+    if (currentUserRole != 'Admin' && currentUserRole != 'Owner') {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('You are not authorized to edit roles')));
+      return;
+    }
 
-  if (member.role == 'Owner') {
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('You cannot change the role of the Owner')));
-    return;
-  }
+    if (member.role == 'Owner') {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('You cannot change the role of the Owner')));
+      return;
+    }
 
-  // Show a dialog for selecting the new role (only Admin or Member)
-  String newRole = member.role; // Default to the current role
+    String newRole = member.role;
 
-  await showDialog(
-    context: context,
-    builder: (BuildContext context) {
-      return AlertDialog(
-        title: const Text('Select Role'),
-        content: StatefulBuilder(
-          builder: (context, setState) {
-            return DropdownButton<String>(
-              value: newRole,
-              onChanged: (String? newValue) {
-                setState(() {
-                  newRole = newValue!;
-                });
-              },
-              items: <String>['Member', 'Admin']
-                  .map<DropdownMenuItem<String>>((String value) {
-                return DropdownMenuItem<String>(
-                  value: value,
-                  child: Text(value),
-                );
-              }).toList(),
-            );
-          },
-        ),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop(); // Close the dialog
-            },
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              // Send the role change to the backend
-              final response = await http.put(
-                Uri.parse('http://$ip/members/${widget.gid}/${member.uid}'),
-                headers: {'Content-Type': 'application/json'},
-                body: json.encode({"role": newRole}),
+   //dialog for choosing new role
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Select Role'),
+          content: StatefulBuilder(
+            builder: (context, setState) {
+              return DropdownButton<String>(
+                value: newRole,
+                onChanged: (String? newValue) {
+                  setState(() {
+                    newRole = newValue!;
+                  });
+                },
+                items: <String>['Member', 'Admin']
+                    .map<DropdownMenuItem<String>>((String value) {
+                  return DropdownMenuItem<String>(
+                    value: value,
+                    child: Text(value),
+                  );
+                }).toList(),
               );
-
-              if (response.statusCode == 200) {
-                setState(() {
-                  member.role = newRole;
-                });
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Role updated to $newRole')));
-                Navigator.of(context).pop(); // Close the dialog
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to update role')));
-              }
             },
-            child: const Text('Update Role'),
           ),
-        ],
-      );
-    },
-  );
-}
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Cancel
+              },
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                // Update role in backend
+                final response = await http.put(
+                  Uri.parse('http://$ip/members/${widget.gid}/${member.uid}'),
+                  headers: {'Content-Type': 'application/json'},
+                  body: json.encode({"role": newRole}),
+                );
 
+                if (response.statusCode == 200) {
+                  setState(() {
+                    member.role = newRole;
+                  });
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Role updated to $newRole')));
+                  Navigator.of(context).pop();
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to update role')));
+                }
+              },
+              child: const Text('Update Role'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  //  admin/owner can remove a member from the group
   Future<void> _kickMember(Member member) async {
-  if (currentUserRole != 'Admin' && currentUserRole != 'Owner') {
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('You are not authorized to kick members')));
-    return;
-  }
+    if (currentUserRole != 'Admin' && currentUserRole != 'Owner') {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('You are not authorized to kick members')));
+      return;
+    }
 
-  if (member.role == 'Owner') {
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('You cannot kick the Owner')));
-    return;
-  }
+    if (member.role == 'Owner') {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('You cannot kick the Owner')));
+      return;
+    }
 
-  final response = await http.delete(
-    Uri.parse('http://$ip/members/${widget.gid}/${member.uid}'),
-  );
+    final response = await http.delete(
+      Uri.parse('http://$ip/members/${widget.gid}/${member.uid}'),
+    );
 
-  if (response.statusCode == 200) {
-    setState(() {
-      _members.remove(member);
-    });
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Member kicked out')));
-  } else {
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to kick member')));
+    if (response.statusCode == 200) {
+      setState(() {
+        _members.remove(member);
+      });
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Member kicked out')));
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to kick member')));
+    }
   }
-}
 
   @override
   Widget build(BuildContext context) {
@@ -210,34 +218,35 @@ class _MembersListPageState extends State<MembersListPage> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _members.isEmpty
-          ? const Center(child: Text('No members found'))
-          : ListView.builder(
-        itemCount: _members.length,
-        itemBuilder: (context, index) {
-          final member = _members[index];
-          return ListTile(
-            title: Text('${member.firstName ?? ''} ${member.lastName ?? ''}'),
-            subtitle: Text('Role: ${member.role}'),
-            trailing: (currentUserRole == 'Admin' || currentUserRole == 'Owner')
-                ? Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.edit),
-                  onPressed: () => _editRole(member), // Trigger role editing
+              ? const Center(child: Text('No members found'))
+              : ListView.builder(
+                  itemCount: _members.length,
+                  itemBuilder: (context, index) {
+                    final member = _members[index];
+                    return ListTile(
+                      title: Text('${member.firstName ?? ''} ${member.lastName ?? ''}'),
+                      subtitle: Text('Role: ${member.role}'),
+                      trailing: (currentUserRole == 'Admin' || currentUserRole == 'Owner')
+                          ? Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.edit),
+                                  onPressed: () => _editRole(member),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.remove_circle),
+                                  onPressed: () => _kickMember(member),
+                                ),
+                              ],
+                            )
+                          : null,
+                    );
+                  },
                 ),
-                IconButton(
-                  icon: const Icon(Icons.remove_circle),
-                  onPressed: () => _kickMember(member),
-                ),
-              ],
-            )
-                : null,
-          );
-        },
-      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
+          // Navigate to the invite user page
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -252,6 +261,7 @@ class _MembersListPageState extends State<MembersListPage> {
   }
 }
 
+// model for group member
 class Member {
   final String uid;
   final int gid;
@@ -270,6 +280,7 @@ class Member {
   }
 }
 
+// model for user details
 class UserMember {
   final String uid;
   final String firstName;

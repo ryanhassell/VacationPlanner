@@ -8,9 +8,10 @@ import 'members_list_page.dart';
 import 'chat_page.dart';
 import 'global_vars.dart';
 
+
 class GroupManagePage extends StatefulWidget {
-  final String uid;
-  final int gid;
+  final String uid; // uid
+  final int gid; // gid
 
   const GroupManagePage({super.key, required this.uid, required this.gid});
 
@@ -31,6 +32,7 @@ class _GroupManagePageState extends State<GroupManagePage> {
     fetchUserData();
   }
 
+  // fetches group details including the owner’s name
   Future<void> fetchGroupDetails() async {
     try {
       final groupRes = await http.get(Uri.parse('http://$ip/groups/get/${widget.gid}'));
@@ -39,14 +41,14 @@ class _GroupManagePageState extends State<GroupManagePage> {
         final group = jsonDecode(groupRes.body);
         final ownerId = group['owner'];
 
-        // Fetch owner's first name
+        // fetches owners first name using their uid
         final userRes = await http.get(Uri.parse('http://$ip/users/$ownerId'));
 
         if (userRes.statusCode == 200) {
           final ownerData = jsonDecode(userRes.body);
           group['owner_name'] = ownerData['first_name'];
         } else {
-          group['owner_name'] = ownerId;
+          group['owner_name'] = ownerId; // fallback to ID if fails
         }
 
         setState(() {
@@ -67,6 +69,7 @@ class _GroupManagePageState extends State<GroupManagePage> {
     }
   }
 
+  // fetches the current user’s data
   Future<void> fetchUserData() async {
     final response = await http.get(Uri.parse("http://$ip/users/${widget.uid}"));
     if (response.statusCode == 200) {
@@ -74,6 +77,7 @@ class _GroupManagePageState extends State<GroupManagePage> {
     }
   }
 
+  // options to create a trip
   void _promptTripCreationModal() {
     showModalBottomSheet(
       context: context,
@@ -119,85 +123,95 @@ class _GroupManagePageState extends State<GroupManagePage> {
     return Scaffold(
       appBar: AppBar(title: const Text("Manage Group")),
       body: isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator()) // Show loading spinner
           : errorMessage != null
-          ? Center(child: Text(errorMessage!))
-          : Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              "Group Name: ${groupData!['group_name']}",
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 10),
-            Text("Owner: ${groupData!['owner_name']}"),
-            Text("Type: ${groupData!['group_type']}"),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => MembersListPage(
-                      uid: widget.uid,
-                      gid: widget.gid.toString(),
-                    ),
-                  ),
-                );
-              },
-              child: const Text("View Members"),
-            ),
-            const SizedBox(height: 10),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ChatPage(
-                      gid: widget.gid,
-                      senderUid: widget.uid,
-                      senderName: userData?['first_name'] ?? 'User',
-                    ),
-                  ),
-                );
-              },
-              child: const Text("Open Group Chat"),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                final tripUrl = Uri.parse("http://$ip/trips/list_trips_by_user/${widget.uid}");
-                final response = await http.get(tripUrl);
-
-                if (response.statusCode == 200) {
-                  final trips = json.decode(response.body);
-                  final groupTrip = trips.firstWhere(
-                        (trip) => trip['group'] == widget.gid,
-                    orElse: () => null,
-                  );
-
-                  if (groupTrip != null) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => TripDetailPage(tripId: groupTrip['trip_id']),
+              ? Center(child: Text(errorMessage!)) // Show error message
+              : Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // displays the group name
+                      Text(
+                        "Group Name: ${groupData!['group_name']}",
+                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                       ),
-                    );
-                  } else {
-                    _promptTripCreationModal();
-                  }
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Failed to check group trip.")),
-                  );
-                }
-              },
-              child: const Text("View/Create Group Trip"),
-            ),
-          ],
-        ),
-      ),
+                      const SizedBox(height: 10),
+                      // display owner name and group type
+                      Text("Owner: ${groupData!['owner_name']}"),
+                      Text("Type: ${groupData!['group_type']}"),
+                      const SizedBox(height: 20),
+
+                      // navigate to members list page
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => MembersListPage(
+                                uid: widget.uid,
+                                gid: widget.gid.toString(),
+                              ),
+                            ),
+                          );
+                        },
+                        child: const Text("View Members"),
+                      ),
+                      const SizedBox(height: 10),
+
+                      // navigate to group chat page
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ChatPage(
+                                gid: widget.gid,
+                                senderUid: widget.uid,
+                                senderName: userData?['first_name'] ?? 'User',
+                              ),
+                            ),
+                          );
+                        },
+                        child: const Text("Open Group Chat"),
+                      ),
+
+                      // check for existing trip or offer creation
+                      ElevatedButton(
+                        onPressed: () async {
+                          final tripUrl = Uri.parse("http://$ip/trips/list_trips_by_user/${widget.uid}");
+                          final response = await http.get(tripUrl);
+
+                          if (response.statusCode == 200) {
+                            final trips = json.decode(response.body);
+                            final groupTrip = trips.firstWhere(
+                              (trip) => trip['group'] == widget.gid,
+                              orElse: () => null,
+                            );
+
+                            if (groupTrip != null) {
+                              // navigates to existing trip page
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => TripDetailPage(tripId: groupTrip['trip_id']),
+                                ),
+                              );
+                            } else {
+                              // create new trip
+                              _promptTripCreationModal();
+                            }
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text("Failed to check group trip.")),
+                            );
+                          }
+                        },
+                        child: const Text("View/Create Group Trip"),
+                      ),
+                    ],
+                  ),
+                ),
     );
   }
 }
