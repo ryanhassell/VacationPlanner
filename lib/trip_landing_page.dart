@@ -1,3 +1,4 @@
+// Import necessary packages
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -6,11 +7,10 @@ import 'package:vacation_planner/trip_detail_page.dart';
 import 'create_random_trip.dart';
 import 'custom_trip_page.dart';
 import 'global_vars.dart';
-//
-// DEPRECATED
-//
+
 class TripLandingPage extends StatefulWidget {
   final String uid;
+
   const TripLandingPage({Key? key, required this.uid}) : super(key: key);
 
   @override
@@ -18,14 +18,15 @@ class TripLandingPage extends StatefulWidget {
 }
 
 class _TripLandingPageState extends State<TripLandingPage> {
-  late Future<List<Map<String, dynamic>>> _tripsFuture;
+  late Future<List<Map<String, dynamic>>> _tripsFuture; // stores future trip results
 
   @override
   void initState() {
     super.initState();
-    _tripsFuture = fetchTrips();
+    _tripsFuture = fetchTrips(); // initiates trip fetching
   }
 
+  // fetches a list of trips for the user from the backend API
   Future<List<Map<String, dynamic>>> fetchTrips() async {
     final url = Uri.parse('http://$ip/trips/list_trips_by_user/${widget.uid}');
     final response = await http.get(url);
@@ -38,6 +39,7 @@ class _TripLandingPageState extends State<TripLandingPage> {
     }
   }
 
+  // shows a bottom to choose between random or custom trip creation
   void _navigateToCreateTrip() {
     showModalBottomSheet(
       context: context,
@@ -45,11 +47,12 @@ class _TripLandingPageState extends State<TripLandingPage> {
         return SafeArea(
           child: Wrap(
             children: [
+              // option to generate randomly
               ListTile(
                 leading: const Icon(Icons.shuffle),
                 title: const Text('Randomly Generate Trip'),
                 onTap: () {
-                  Navigator.pop(ctx);
+                  Navigator.pop(ctx); // Close bottom sheet
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -58,11 +61,12 @@ class _TripLandingPageState extends State<TripLandingPage> {
                   );
                 },
               ),
+              // option to create custom
               ListTile(
                 leading: const Icon(Icons.create),
                 title: const Text('Create Your Own Trip'),
                 onTap: () {
-                  Navigator.pop(ctx);
+                  Navigator.pop(ctx); // Close bottom sheet
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -83,7 +87,6 @@ class _TripLandingPageState extends State<TripLandingPage> {
     return Scaffold(
       body: Column(
         children: [
-          // Header
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12),
             color: Colors.white,
@@ -96,21 +99,22 @@ class _TripLandingPageState extends State<TripLandingPage> {
                 ),
                 IconButton(
                   icon: const Icon(Icons.add),
-                  onPressed: _navigateToCreateTrip,
+                  onPressed: _navigateToCreateTrip, // open trip creation options
                 ),
               ],
             ),
           ),
+          // Trip list content
           Expanded(
             child: FutureBuilder<List<Map<String, dynamic>>>(
               future: _tripsFuture,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
+                  return const Center(child: CircularProgressIndicator()); // loading indicator
                 } else if (snapshot.hasError) {
-                  return Center(child: Text('Error: ${snapshot.error}'));
+                  return Center(child: Text('Error: ${snapshot.error}')); // error check
                 } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return const Center(child: Text('No trips found.'));
+                  return const Center(child: Text('No trips found.')); // no data found message
                 }
 
                 final trips = snapshot.data!;
@@ -118,7 +122,7 @@ class _TripLandingPageState extends State<TripLandingPage> {
                 return RefreshIndicator(
                   onRefresh: () async {
                     setState(() {
-                      _tripsFuture = fetchTrips();
+                      _tripsFuture = fetchTrips(); // refresh trip data
                     });
                   },
                   child: ListView.builder(
@@ -126,8 +130,10 @@ class _TripLandingPageState extends State<TripLandingPage> {
                     itemCount: trips.length,
                     itemBuilder: (context, index) {
                       final trip = trips[index];
+
                       return GestureDetector(
                         onTap: () {
+                          // navigate to the trips detail page
                           Navigator.push(
                             context,
                             MaterialPageRoute(
@@ -141,6 +147,7 @@ class _TripLandingPageState extends State<TripLandingPage> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              // preview map of the trip location
                               SizedBox(
                                 height: 150,
                                 child: ClipRRect(
@@ -160,6 +167,7 @@ class _TripLandingPageState extends State<TripLandingPage> {
                                   ),
                                 ),
                               ),
+                              // trip title and navigation icon
                               Padding(
                                 padding: const EdgeInsets.all(12.0),
                                 child: Row(
