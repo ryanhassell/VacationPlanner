@@ -16,11 +16,20 @@ class EditTripPage extends StatefulWidget {
 }
 
 class _EditTripPageState extends State<EditTripPage> {
+  // controller for the search bar
   final TextEditingController _searchController = TextEditingController();
+
+  // list to store search results
   List<Map<String, dynamic>> _searchResults = [];
+
+  // list to store selected places
   List<Map<String, dynamic>> _selectedPlaces = [];
+
+  // flags for loading states
   bool _isSearching = false;
   bool _isSaving = false;
+
+  // debounce timer for search input
   Timer? _debounceTimer;
 
   @override
@@ -29,6 +38,7 @@ class _EditTripPageState extends State<EditTripPage> {
     _fetchTripData();
   }
 
+  // fetch trip data from the backend
   Future<void> _fetchTripData() async {
     final url = Uri.parse('http://$ip/trips/get_trip/${widget.tripId}');
 
@@ -48,6 +58,7 @@ class _EditTripPageState extends State<EditTripPage> {
     }
   }
 
+  // search places using mapbox api with debounce
   void _searchPlaces(String query) {
     if (_debounceTimer?.isActive ?? false) _debounceTimer!.cancel();
 
@@ -60,7 +71,8 @@ class _EditTripPageState extends State<EditTripPage> {
       setState(() => _isSearching = true);
 
       final url = Uri.parse(
-          'https://api.mapbox.com/search/searchbox/v1/forward?q=$query&types=poi,address,place&access_token=$mapboxAccessToken');
+          'https://api.mapbox.com/search/searchbox/v1/forward?q=$query&types=poi,address,place&access_token=$mapboxAccessToken'
+      );
 
       try {
         final response = await http.get(url);
@@ -91,16 +103,19 @@ class _EditTripPageState extends State<EditTripPage> {
     });
   }
 
+  // add a place to selected list if not already added
   void _addPlace(Map<String, dynamic> place) {
     if (!_selectedPlaces.any((p) => p['name'] == place['name'])) {
       setState(() => _selectedPlaces.add(place));
     }
   }
 
+  // remove a place from selected list
   void _removePlace(int index) {
     setState(() => _selectedPlaces.removeAt(index));
   }
 
+  // update trip data in the backend
   Future<void> _updateTrip() async {
     if (_selectedPlaces.isEmpty) return;
 
@@ -135,9 +150,11 @@ class _EditTripPageState extends State<EditTripPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // app bar with page title
       appBar: AppBar(title: const Text('Edit Trip')),
       body: Column(
         children: [
+          // search bar for place queries
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: TextField(
@@ -162,6 +179,7 @@ class _EditTripPageState extends State<EditTripPage> {
               ),
             ),
           ),
+          // list of search results
           Expanded(
             child: _searchResults.isEmpty
                 ? const Center(child: Text('No search results'))
@@ -181,10 +199,12 @@ class _EditTripPageState extends State<EditTripPage> {
             ),
           ),
           const Divider(),
+          // section title for selected places
           const Padding(
             padding: EdgeInsets.all(8.0),
             child: Text('Selected Places', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
+          // list of selected places
           Expanded(
             child: _selectedPlaces.isEmpty
                 ? const Center(child: Text('No places added yet.'))
@@ -203,6 +223,7 @@ class _EditTripPageState extends State<EditTripPage> {
               },
             ),
           ),
+          // save button or loading spinner
           _isSaving
               ? const Padding(
             padding: EdgeInsets.all(16.0),

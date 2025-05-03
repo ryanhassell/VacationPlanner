@@ -31,6 +31,7 @@ def get_db():
         db.close()
 
 
+# router to send a message
 @router.post("/send_message", response_model=MessageResponse)
 def send_message(message: MessageCreateRequest, db: Session = Depends(get_db)):
     db_message = Message(
@@ -47,7 +48,7 @@ def send_message(message: MessageCreateRequest, db: Session = Depends(get_db)):
     return db_message
 
 
-
+# obtain previous messages
 @router.get("/get_messages/{gid}", response_model=List[MessageResponse])
 def get_messages(gid: int, db: Session = Depends(get_db)):
     messages = db.query(Message).filter(Message.gid == gid).order_by(Message.timestamp).all()
@@ -69,6 +70,7 @@ def get_unread_groups(uid: str, db: Session = Depends(get_db)):
 
 
 from sqlalchemy.orm.attributes import flag_modified
+
 
 @router.post("/mark_read/{gid}/{uid}")
 def mark_read(gid: int, uid: str, db: Session = Depends(get_db)):

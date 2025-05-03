@@ -3,14 +3,14 @@ from typing import List
 from pydantic import BaseModel
 from enum import Enum
 
-
+#landmark psuedo model
 class Landmark(BaseModel):
     name: str
     lat: float
     long: float
     type: str
 
-
+#landmark enum
 class LandmarkTypeEnum(str, Enum):
     food = "Food"
     park = "Park"
@@ -20,7 +20,7 @@ class LandmarkTypeEnum(str, Enum):
     art = "Art"
     entertainment = "Entertainment"
 
-
+#default trip response
 class TripResponse(BaseModel):
     trip_id: int
     group: int
@@ -58,7 +58,7 @@ class CustomTripResponse(BaseModel):
         arbitrary_types_allowed = True
         orm_mode = True
 
-
+#to fix weird error w trip id
 class AlternateTripResponse(BaseModel):
     tid: int
     group: int

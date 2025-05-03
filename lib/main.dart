@@ -31,7 +31,7 @@ class VacationPlannerApp extends StatelessWidget {
 /// and routes the user to the appropriate page.
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
-
+//takes to login if no user, home if user
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<User?>(

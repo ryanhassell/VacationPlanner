@@ -23,7 +23,7 @@ class _ProfileInfoPageState extends State<ProfileInfoPage> {
   bool _isUploading = false;
   String? profileImageUrl;
 
-  // Fetch user data from your backend (Postgres)
+  // Fetch user data from backend
   Future<Map<String, dynamic>> _fetchUserData() async {
     final response =
     await http.get(Uri.parse("http://$ip/users/${widget.uid}"));
@@ -49,14 +49,13 @@ class _ProfileInfoPageState extends State<ProfileInfoPage> {
     }
   }
 
-  // Update the user's profile_image_url in your backend (PUT /users/{uid})
+  // Update the user's profile_image_url in the backend
   Future<void> _updateUserProfileImageUrl(String newUrl) async {
     try {
       final apiUrl = "http://$ip/users/${widget.uid}";
-      // Include required fields (e.g. 'groups') if your server requires them.
       final Map<String, dynamic> body = {
         "profile_image_url": newUrl,
-        "groups": [] // or pass the user's current groups if required
+        "groups": []
       };
       final response = await http.put(
         Uri.parse(apiUrl),
@@ -74,8 +73,7 @@ class _ProfileInfoPageState extends State<ProfileInfoPage> {
     }
   }
 
-  // Let the user pick and upload a new profile picture to Firebase Storage,
-  // and update your backend with the new URL.
+  // Let the user pick and upload a new profile picture to Firebase Storage
   Future<void> _pickAndUploadImage() async {
     final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
     if (pickedFile == null) return;
@@ -115,12 +113,10 @@ class _ProfileInfoPageState extends State<ProfileInfoPage> {
   }
 
   void _changePassword() {
-    // Implement your change password functionality or navigation here.
     print("Change Password button pressed");
   }
 
-  // New: Log out functionality. When pressed, sign out from Firebase Auth
-  // and navigate to the LoginPage.
+  // When pressed, sign out from Firebase Auth and navigate to the LoginPage.
   Future<void> _logOut() async {
     await FirebaseAuth.instance.signOut();
     Navigator.pushReplacement(
@@ -169,7 +165,6 @@ class _ProfileInfoPageState extends State<ProfileInfoPage> {
           final email = data['email_address'] ?? '';
           final profileUrlFromDb = data['profile_image_url'] ?? '';
 
-          // Decide which URL to show: the newly uploaded one (if available) or the DB value.
           final effectiveProfileUrl = profileImageUrl ?? profileUrlFromDb;
 
           return SingleChildScrollView(
@@ -194,7 +189,7 @@ class _ProfileInfoPageState extends State<ProfileInfoPage> {
                             : null,
                       ),
                       if (_isUploading) const CircularProgressIndicator(),
-                      // Blue pen icon positioned at the bottom right.
+                      // Blue pen icon
                       Positioned(
                         bottom: 0,
                         right: 0,
@@ -231,7 +226,7 @@ class _ProfileInfoPageState extends State<ProfileInfoPage> {
                   child: const Text("Change Password"),
                 ),
                 const SizedBox(height: 16),
-                // Red Log Out button with white text.
+                //Log Out button
                 ElevatedButton(
                   onPressed: _logOut,
                   style: ElevatedButton.styleFrom(

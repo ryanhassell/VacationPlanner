@@ -5,11 +5,12 @@ import 'create_group_page.dart';
 import 'view_groups_page.dart';
 import 'profile_info_page.dart';
 import 'create_random_trip.dart';
-import 'chat_page.dart'; // <-- ADD THIS IMPORT
+import 'chat_page.dart';
 
 class DebugPage extends StatelessWidget {
   final String uid;
 
+  // Constructor to receive the user ID
   const DebugPage({Key? key, required this.uid}) : super(key: key);
 
   @override
@@ -28,11 +29,13 @@ class DebugPage extends StatelessWidget {
                 style: TextStyle(fontSize: 20),
               ),
               const SizedBox(height: 10),
+              // Displaying the logged-in user ID
               Text(
                 'Logged in as User ID: $uid',
                 style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 20),
+              // Button to navigate to the Login Page
               ElevatedButton(
                 onPressed: () {
                   Navigator.pushReplacement(
@@ -43,6 +46,7 @@ class DebugPage extends StatelessWidget {
                 child: const Text('Go to Login Page'),
               ),
               const SizedBox(height: 10),
+              // Button to navigate to CreateGroupPage with user ID
               ElevatedButton(
                 onPressed: () {
                   Navigator.push(
@@ -53,6 +57,7 @@ class DebugPage extends StatelessWidget {
                 child: const Text('Create Group'),
               ),
               const SizedBox(height: 10),
+              // Button to navigate to ViewGroupsPage with user ID
               ElevatedButton(
                 onPressed: () {
                   Navigator.push(
@@ -63,6 +68,7 @@ class DebugPage extends StatelessWidget {
                 child: const Text('View Groups'),
               ),
               const SizedBox(height: 10),
+              // Button to navigate to ProfileInfoPage with user ID
               ElevatedButton(
                 onPressed: () {
                   Navigator.push(
@@ -73,6 +79,7 @@ class DebugPage extends StatelessWidget {
                 child: const Text('Profile Info'),
               ),
               const SizedBox(height: 10),
+              // Button to navigate to CreateRandomTripPage with hardcoded group and user ID
               ElevatedButton(
                 onPressed: () {
                   Navigator.push(
@@ -87,7 +94,7 @@ class DebugPage extends StatelessWidget {
                 child: const Text('Generate Trip'),
               ),
               const SizedBox(height: 10),
-              // New button to navigate to ChatPage
+              // New button to navigate to ChatPage with sender UID and group ID
               ElevatedButton(
                 onPressed: () {
                   Navigator.push(

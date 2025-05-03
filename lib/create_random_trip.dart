@@ -21,37 +21,31 @@ class CreateRandomTripPage extends StatefulWidget {
 }
 
 class _TripTabPageState extends State<CreateRandomTripPage> with SingleTickerProviderStateMixin {
-  bool isLoading = false;
-  MapboxMapController? mapController;
-  CameraPosition? _initialPosition;
+  bool isLoading = false;  // tracks loading state for trip generation
+  MapboxMapController? mapController;  // controller for the map
+  CameraPosition? _initialPosition;  // initial camera position for the map
 
-  double? currentLat;
-  double? currentLong;
-  final TextEditingController _addressController = TextEditingController();
-  List<String> suggestions = [];
+  double? currentLat;  // user's current latitude
+  double? currentLong;  // user's current longitude
+  final TextEditingController _addressController = TextEditingController();  // controller for address input
+  List<String> suggestions = [];  // list of address suggestions
 
   final List<String> availableCategories = [
-    "Food",
-    "Parks",
-    "Historic",
-    "Memorials",
-    "Museums",
-    "Art",
-    "Entertainment"
-  ];
-  Set<String> selectedCategories = {};
+    "Food", "Parks", "Historic", "Memorials", "Museums", "Art", "Entertainment"
+  ];  // categories available for trip selection
+  Set<String> selectedCategories = {};  // categories selected by the user
 
-  double _maxTripDistance = 50.0;
-  double _maxInterlandmarkDistance = 20.0;
-  int _numDestinations = 6;
+  double _maxTripDistance = 50.0;  // maximum trip distance in km
+  double _maxInterlandmarkDistance = 20.0;  // maximum distance between landmarks
+  int _numDestinations = 6;  // number of destinations in the trip
 
-  late AnimationController _animationController;
-  late Animation<Offset> _slideAnimation;
+  late AnimationController _animationController;  // controller for animations
+  late Animation<Offset> _slideAnimation;  // slide animation for address input
 
   @override
   void initState() {
     super.initState();
-    _determinePosition();
+    _determinePosition();  // get the current position of the user
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 600),
@@ -65,6 +59,7 @@ class _TripTabPageState extends State<CreateRandomTripPage> with SingleTickerPro
     ));
     _animationController.forward();
 
+    // listen to address input changes to fetch suggestions
     _addressController.addListener(() {
       if (_addressController.text.trim().isEmpty) return;
       _fetchSuggestions(_addressController.text.trim());
@@ -84,6 +79,7 @@ class _TripTabPageState extends State<CreateRandomTripPage> with SingleTickerPro
     }
   }
 
+  // use the provided address to get coordinates and update map position
   Future<void> _useAddress(String query) async {
     if (query.isEmpty) return;
     final url = Uri.parse(
@@ -108,6 +104,7 @@ class _TripTabPageState extends State<CreateRandomTripPage> with SingleTickerPro
     }
   }
 
+  // determine the user's current location using Geolocator
   Future<void> _determinePosition() async {
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) return;
@@ -134,14 +131,15 @@ class _TripTabPageState extends State<CreateRandomTripPage> with SingleTickerPro
     }
   }
 
+  // generate a random trip based on user selections
   Future<void> generateTrip() async {
-    if (selectedCategories.length < 3) {
+    if (selectedCategories.length < 3) {  // ensure at least 3 categories are selected
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Please select at least 3 categories.")),
       );
       return;
     }
-    if (currentLat == null || currentLong == null) {
+    if (currentLat == null || currentLong == null) {  // ensure location is set
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Location not set.")),
       );
@@ -191,12 +189,12 @@ class _TripTabPageState extends State<CreateRandomTripPage> with SingleTickerPro
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.all(16.0),
         child: isLoading
-            ? const Center(child: CircularProgressIndicator())
+            ? const Center(child: CircularProgressIndicator())  // show loading indicator while generating
             : SizedBox(
           width: double.infinity,
           height: 55,
           child: ElevatedButton(
-            onPressed: generateTrip,
+            onPressed: generateTrip,  // trigger trip generation on button press
             style: ElevatedButton.styleFrom(
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
@@ -205,7 +203,7 @@ class _TripTabPageState extends State<CreateRandomTripPage> with SingleTickerPro
         ),
       ),
       body: _initialPosition == null
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator())  // show loading while map position is being determined
           : SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -301,6 +299,7 @@ class _TripTabPageState extends State<CreateRandomTripPage> with SingleTickerPro
     );
   }
 
+  // build category button for each category
   Widget _buildCategoryButton(String category) {
     bool isSelected = selectedCategories.contains(category);
     return AnimatedContainer(
@@ -331,6 +330,7 @@ class _TripTabPageState extends State<CreateRandomTripPage> with SingleTickerPro
     );
   }
 
+  // build slider for trip settings like distance and destinations
   Widget _buildSlider(String label, double value, double min, double max, ValueChanged<double> onChanged) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

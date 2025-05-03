@@ -8,8 +8,9 @@ import 'package:image_picker/image_picker.dart';
 import 'global_vars.dart';
 import 'home_page.dart';
 
+
 class EditProfilePage extends StatefulWidget {
-  final String uid;
+  final String uid; // user id passed to the page
 
   const EditProfilePage({Key? key, required this.uid}) : super(key: key);
 
@@ -18,21 +19,22 @@ class EditProfilePage extends StatefulWidget {
 }
 
 class _EditProfilePageState extends State<EditProfilePage> {
-  final ImagePicker _picker = ImagePicker();
-  bool _isUploading = false;
-  String? _profileImageUrl;
-  final TextEditingController _firstNameController = TextEditingController();
-  final TextEditingController _lastNameController  = TextEditingController();
-  final TextEditingController _emailController     = TextEditingController();
-  final TextEditingController _phoneController     = TextEditingController();
+  final ImagePicker _picker = ImagePicker(); // image picker instance
+  bool _isUploading = false; // flag to show loading indicator
+  String? _profileImageUrl; // stores profile image url
+  final TextEditingController _firstNameController = TextEditingController(); // input for first name
+  final TextEditingController _lastNameController  = TextEditingController(); // input for last name
+  final TextEditingController _emailController     = TextEditingController(); // input for email
+  final TextEditingController _phoneController     = TextEditingController(); // input for phone number
 
-  // Stock images for profile picture selection
+  // default profile pictures to choose from
   final List<String> _stockImages = [
     "https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/Outdoors-man-portrait_%28cropped%29.jpg/1200px-Outdoors-man-portrait_%28cropped%29.jpg",
     "https://variety.com/wp-content/uploads/2024/06/5N7A0541-e1718042484447.jpg",
     "https://images.pexels.com/photos/2379005/pexels-photo-2379005.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500",
   ];
 
+  // fetch user data from the backend
   Future<Map<String, dynamic>> _fetchUserData() async {
     final response = await http.get(Uri.parse("http://$ip/users/${widget.uid}"));
     if (response.statusCode == 200) {
@@ -42,6 +44,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     }
   }
 
+  // load profile image from firebase storage
   Future<void> _loadProfileImage() async {
     try {
       final ref = FirebaseStorage.instance.ref().child("profile_pictures/${widget.uid}.jpg");
@@ -54,7 +57,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     }
   }
 
-  // Update Firebase Auth user profile with new photoURL
+  // update firebase auth user profile with image url
   Future<void> _updateFirebaseUserProfile(String url) async {
     try {
       User? user = FirebaseAuth.instance.currentUser;
@@ -67,6 +70,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     }
   }
 
+  // pick an image from the gallery and upload it to firebase
   Future<void> _pickImageFromGallery() async {
     final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
     if (pickedFile == null) return;
@@ -81,8 +85,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
       setState(() {
         _profileImageUrl = url;
       });
-      // Update Firebase Auth profile with new photoURL.
-      await _updateFirebaseUserProfile(url);
+      await _updateFirebaseUserProfile(url); // update firebase auth
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Profile picture updated!")),
       );
@@ -98,6 +101,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     }
   }
 
+  // show modal bottom sheet for profile picture options
   void _showImageOptions() {
     showModalBottomSheet(
       context: context,
@@ -138,8 +142,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         setState(() {
                           _profileImageUrl = stockUrl;
                         });
-                        // Optionally update the Firebase Auth profile with the stock image URL.
-                        await _updateFirebaseUserProfile(stockUrl);
+                        await _updateFirebaseUserProfile(stockUrl); // update auth
                         Navigator.pop(context);
                       },
                       child: Image.network(stockUrl, fit: BoxFit.cover),
@@ -154,9 +157,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
     );
   }
 
+  // save profile data to backend
   Future<void> _saveProfile(Map<String, dynamic> currentData) async {
-    // Prepare updated data by taking values from the controllers,
-    // or using the existing data if the controller is empty.
+    // use entered data or fall back to existing values
     final Map<String, dynamic> updatedData = {
       "first_name": _firstNameController.text.isNotEmpty
           ? _firstNameController.text
@@ -171,7 +174,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
           ? _phoneController.text
           : currentData['phone_number'],
       "profile_image_url": _profileImageUrl ?? currentData['profile_image_url'] ?? "",
-
       "groups": currentData['groups'] ?? [],
     };
 
@@ -202,7 +204,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
   @override
   void initState() {
     super.initState();
-    _loadProfileImage();
+    _loadProfileImage(); // fetch profile image on load
   }
 
   @override
@@ -221,25 +223,23 @@ class _EditProfilePageState extends State<EditProfilePage> {
         ),
       ),
       body: FutureBuilder<Map<String, dynamic>>(
-        future: _fetchUserData(),
+        future: _fetchUserData(), // get user data from API
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(child: CircularProgressIndicator()); // loading spinner
           }
           if (snapshot.hasError) {
-            return Center(child: Text("Error: ${snapshot.error}"));
+            return Center(child: Text("Error: ${snapshot.error}")); // show error
           }
           if (!snapshot.hasData) {
-            return const Center(child: Text("User data not found."));
+            return const Center(child: Text("User data not found.")); // no data
           }
           final data = snapshot.data!;
-          // Populate controllers with current data if they are empty.
+          // fill controllers if empty
           if (_firstNameController.text.isEmpty) _firstNameController.text = data['first_name'] ?? "";
           if (_lastNameController.text.isEmpty) _lastNameController.text = data['last_name'] ?? "";
           if (_emailController.text.isEmpty) _emailController.text = data['email_address'] ?? "";
           if (_phoneController.text.isEmpty) _phoneController.text = data['phone_number'] ?? "";
-
-          // If profile image URL is not set locally, use the value from the database.
           _profileImageUrl = data['profile_image_url'] ?? _profileImageUrl;
 
           return SingleChildScrollView(
@@ -248,7 +248,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 GestureDetector(
-                  onTap: _showImageOptions,
+                  onTap: _showImageOptions, // open modal to change picture
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
@@ -262,7 +262,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                             ? const Icon(Icons.person, size: 60, color: Colors.white)
                             : null,
                       ),
-                      if (_isUploading) const CircularProgressIndicator(),
+                      if (_isUploading) const CircularProgressIndicator(), // show loader
                       Positioned(
                         bottom: 0,
                         right: 0,
@@ -311,7 +311,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 ),
                 const SizedBox(height: 24),
                 ElevatedButton(
-                  onPressed: () => _saveProfile(data),
+                  onPressed: () => _saveProfile(data), // save updated info
                   style: ElevatedButton.styleFrom(
                     minimumSize: const Size(double.infinity, 48),
                   ),

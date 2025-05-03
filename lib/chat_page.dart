@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'global_vars.dart'; // Make sure this has your backend IP
+import 'global_vars.dart';
 
 class ChatPage extends StatefulWidget {
   final int gid;
@@ -29,14 +29,14 @@ class _ChatPageState extends State<ChatPage> {
   @override
   void initState() {
     super.initState();
-    fetchMessages();
-    _timer = Timer.periodic(const Duration(seconds: 5), (_) => fetchMessages());
+    fetchMessages();  // fetch initial messages
+    _timer = Timer.periodic(const Duration(seconds: 5), (_) => fetchMessages());  // refresh messages every 5 seconds
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
-    _messageController.dispose();
+    _timer?.cancel();  // cancel timer when the widget is disposed
+    _messageController.dispose();  // dispose message controller
     super.dispose();
   }
 
@@ -48,16 +48,16 @@ class _ChatPageState extends State<ChatPage> {
     if (response.statusCode == 200) {
       final List<dynamic> data = json.decode(response.body);
       setState(() {
-        _messages = data.cast<Map<String, dynamic>>();
+        _messages = data.cast<Map<String, dynamic>>();  // update messages list
       });
-      await markMessagesAsRead();  // Ensure read_by gets updated
+      await markMessagesAsRead();  // ensure read_by gets updated
     } else {
       print('Failed to fetch messages: ${response.body}');
     }
   }
 
   Future<void> sendMessage() async {
-    if (_messageController.text.trim().isEmpty) return;
+    if (_messageController.text.trim().isEmpty) return;  // don't send empty messages
 
     final body = {
       "gid": widget.gid,
@@ -75,8 +75,8 @@ class _ChatPageState extends State<ChatPage> {
       );
 
       if (response.statusCode == 200) {
-        _messageController.clear();
-        fetchMessages();
+        _messageController.clear();  // clear message input after sending
+        fetchMessages();  // refresh messages list
       } else {
         print('Failed to send message: ${response.body}');
       }
@@ -102,7 +102,6 @@ class _ChatPageState extends State<ChatPage> {
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -113,20 +112,20 @@ class _ChatPageState extends State<ChatPage> {
         children: [
           Expanded(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
+                ? const Center(child: CircularProgressIndicator())  // show loading indicator if fetching messages
                 : ListView.builder(
-              reverse: true,  // Show newest messages at the bottom
+              reverse: true,  // show newest messages at the bottom
               itemCount: _messages.length,
               itemBuilder: (context, index) {
-                final message = _messages[_messages.length - 1 - index];
-                final isOwnMessage = message['sender_uid'] == widget.senderUid;
+                final message = _messages[_messages.length - 1 - index];  // get the message for the current index
+                final isOwnMessage = message['sender_uid'] == widget.senderUid;  // check if the message is sent by the current user
                 return Container(
-                  alignment: isOwnMessage ? Alignment.centerRight : Alignment.centerLeft,
+                  alignment: isOwnMessage ? Alignment.centerRight : Alignment.centerLeft,  // align message based on sender
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                     decoration: BoxDecoration(
-                      color: isOwnMessage ? Colors.blue[100] : Colors.grey[300],
+                      color: isOwnMessage ? Colors.blue[100] : Colors.grey[300],  // message bubble color based on sender
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Column(
@@ -161,7 +160,7 @@ class _ChatPageState extends State<ChatPage> {
                 const SizedBox(width: 8),
                 IconButton(
                   icon: const Icon(Icons.send),
-                  onPressed: sendMessage,
+                  onPressed: sendMessage,  // send message when button is pressed
                   color: Colors.blue,
                 ),
               ],

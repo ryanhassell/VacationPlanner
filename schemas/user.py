@@ -1,8 +1,7 @@
 from typing import List, Optional
-
 from pydantic import BaseModel
 
-
+#default
 class UserResponse(BaseModel):
     uid: str
     first_name: str
@@ -14,9 +13,9 @@ class UserResponse(BaseModel):
 
 
 class Config:
-        arbitrary_types_allowed = True
+    arbitrary_types_allowed = True
 
-
+#create a user response model
 class UserCreate(BaseModel):
     first_name: str
     last_name: str
@@ -34,17 +33,18 @@ class UserUpdate(BaseModel):
     # user_type: Enum
     profile_image_url: Optional[str]
 
+
 class UserMember(BaseModel):
     uid: str
     first_name: str
     last_name: str
     email_address: str
 
+
 class UserInvite(BaseModel):
     uid: str
 
-from pydantic import BaseModel
-
+#response for changing pass
 class UserChangePassword(BaseModel):
     new_password: str
 

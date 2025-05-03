@@ -25,6 +25,7 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+    // create list of screens for each tab
     _screens = [
       HomeFeedPage(uid: widget.uid),
       GroupTripPage(uid: widget.uid),
@@ -33,6 +34,7 @@ class _HomePageState extends State<HomePage> {
     ];
   }
 
+  // handle bottom nav tap
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
@@ -42,11 +44,13 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // show selected screen
       body: Stack(
         children: [
           SafeArea(child: _screens[_selectedIndex]),
         ],
       ),
+      // bottom navigation bar
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
@@ -80,11 +84,13 @@ class _HomeFeedPageState extends State<HomeFeedPage> {
   @override
   void initState() {
     super.initState();
+    // load user data and start message polling
     fetchUserData();
     checkForNewMessages();
     _messageTimer = Timer.periodic(const Duration(seconds: 15), (_) => checkForNewMessages());
   }
 
+  // fetch user info from backend
   Future<void> fetchUserData() async {
     final response = await http.get(Uri.parse("http://$ip/users/${widget.uid}"));
     if (response.statusCode == 200) {
@@ -94,13 +100,15 @@ class _HomeFeedPageState extends State<HomeFeedPage> {
     setState(() => userLoading = false);
   }
 
+  // check for unread messages
   Future<void> checkForNewMessages() async {
     final response = await http.get(Uri.parse("http://$ip/messages/unread/${widget.uid}"));
     if (response.statusCode == 200) {
       final List<dynamic> data = json.decode(response.body);
       if (data.isNotEmpty) {
+        // show first unread message
         setState(() {
-          unreadMessage = data.first; // Assume API returns first unread message group
+          unreadMessage = data.first;
         });
       } else {
         setState(() => unreadMessage = null);
@@ -110,6 +118,7 @@ class _HomeFeedPageState extends State<HomeFeedPage> {
 
   @override
   void dispose() {
+    // cancel message timer
     _messageTimer?.cancel();
     super.dispose();
   }
@@ -118,6 +127,7 @@ class _HomeFeedPageState extends State<HomeFeedPage> {
   Widget build(BuildContext context) {
     return Column(
       children: [
+        // header with title and user info
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12),
           color: Colors.white,
@@ -129,6 +139,7 @@ class _HomeFeedPageState extends State<HomeFeedPage> {
                   ? const SizedBox(width: 30, height: 30, child: CircularProgressIndicator(strokeWidth: 2))
                   : GestureDetector(
                 onTap: () {
+                  // go to profile page
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => ProfileInfoPage(uid: widget.uid)),
@@ -145,6 +156,7 @@ class _HomeFeedPageState extends State<HomeFeedPage> {
           ),
         ),
         const SizedBox(height: 8),
+        // show unread message banner if exists
         if (unreadMessage != null)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8.0),
@@ -153,6 +165,7 @@ class _HomeFeedPageState extends State<HomeFeedPage> {
               actions: [
                 TextButton(
                   onPressed: () {
+                    // go to chat page
                     Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -170,6 +183,7 @@ class _HomeFeedPageState extends State<HomeFeedPage> {
               backgroundColor: Colors.blue[100],
             ),
           ),
+        // no notifications message
         Expanded(
           child: Center(
             child: Text('No new notifications.', style: TextStyle(color: Colors.grey[600])),

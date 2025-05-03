@@ -21,7 +21,7 @@ class _CreateUserPageState extends State<CreateUserPage> {
   final TextEditingController _lineNumberController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
-  // NEW: Controller for profile image URL
+  // profile image url controller
   final TextEditingController _profileImageURLController = TextEditingController();
 
   final FocusNode _prefixFocusNode = FocusNode();
@@ -67,18 +67,18 @@ class _CreateUserPageState extends State<CreateUserPage> {
     }
 
     try {
-      // 1. Create the user in Firebase Auth
+      // create user in firebase auth
       UserCredential userCredential =
       await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: _emailController.text,
         password: _passwordController.text,
       );
 
-      // Optionally update the display name
+      // optionally update display name
       await userCredential.user?.updateDisplayName(
           '${_firstNameController.text} ${_lastNameController.text}');
 
-      // 2. Send additional user data to your FastAPI backend
+      // send additional user data to backend
       final String apiUrl = 'http://$ip/users';
       final response = await http.post(
         Uri.parse(apiUrl),
@@ -89,7 +89,6 @@ class _CreateUserPageState extends State<CreateUserPage> {
           'email_address': _emailController.text,
           'phone_number': formattedPhone,
           'groups': [], // or any relevant data
-          // IMPORTANT: Include profile_image_url (even if empty).
           'profile_image_url': _profileImageURLController.text.isEmpty
               ? ""
               : _profileImageURLController.text,
@@ -151,7 +150,7 @@ class _CreateUserPageState extends State<CreateUserPage> {
                 keyboardType: TextInputType.emailAddress,
               ),
               const SizedBox(height: 10),
-              // Segmented phone number input
+              // segmented phone number input
               Row(
                 children: [
                   Container(
@@ -239,7 +238,7 @@ class _CreateUserPageState extends State<CreateUserPage> {
                 ),
               ),
               const SizedBox(height: 10),
-              // NEW: Profile Image URL Field
+              // profile image url field
               TextField(
                 controller: _profileImageURLController,
                 decoration: const InputDecoration(

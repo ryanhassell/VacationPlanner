@@ -29,16 +29,20 @@ def get_db():
         db.close()
 
 
+# calculate haversine distance
 def haversine_distance(lat1, lon1, lat2, lon2):
     R = 3958.8
     d_lat = math.radians(lat2 - lat1)
     d_lon = math.radians(lon2 - lon1)
-    a = math.sin(d_lat / 2) ** 2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(d_lon / 2) ** 2
+    a = math.sin(d_lat / 2) ** 2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(
+        d_lon / 2) ** 2
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
     return R * c
 
 
-def get_landmarks(lat: float, lng: float, landmark_types: str, max_distance: float, num_destinations: int, category_counts_str: str):
+def get_landmarks(lat: float, lng: float, landmark_types: str, max_distance: float, num_destinations: int,
+                  category_counts_str: str):
+    # Log input parameters for debugging
     print("get_landmarks() called with:")
     print("  lat =", lat, "lng =", lng)
     print("  landmark_types =", landmark_types)
@@ -46,36 +50,47 @@ def get_landmarks(lat: float, lng: float, landmark_types: str, max_distance: flo
     print("  num_destinations =", num_destinations)
     print("  category_counts_str =", category_counts_str)
 
+    # Parse the landmark types and clean up any extra spaces
     categories = [cat.strip() for cat in landmark_types.split(",") if cat.strip()]
     print("Parsed categories:", categories)
 
+    # Try parsing the category counts, defaulting to 1 for each category if parsing fails
     try:
         category_counts = json.loads(category_counts_str)
     except Exception as e:
         print("Error parsing category_counts; defaulting each category to 1:", e)
         category_counts = {cat: 1 for cat in categories}
 
+    # Ensure all specified categories have an entry in category_counts
     for cat in categories:
         if cat not in category_counts:
             category_counts[cat] = 1
     print("Parsed category_counts:", category_counts)
 
+    # Mapping for each category to relevant search terms for the API query
     query_mapping = {
-        "Food": ["restaurant", "cafe", "diner", "bistro", "eatery", "food", "coffee shop", "grill", "pho", "ramen", "yakitori", "la piazza"],
+        "Food": ["restaurant", "cafe", "diner", "bistro", "eatery", "food", "coffee shop", "grill", "pho", "ramen",
+                 "yakitori", "la piazza"],
         "Parks": ["garden", "botanical garden", "green space", "nature reserve", "trail", "peak", "falls", "orchard"],
         "Historic": ["historic building", "heritage site", "historical site", "landmark", "old building", "monumental"],
         "Memorials": ["memorial", "monument", "commemorative", "statue", "cenotaph", "tribute"],
         "Museums": ["museum", "art gallery", "exhibit", "history museum", "science museum", "cultural center"],
         "Art": ["art gallery", "exhibit", "showcase", "gallery", "art center", "art museum", "creative space"],
-        "Entertainment": ["cinema", "movie theater", "theater", "amusement", "entertainment", "arcade", "playhouse", "live performance"]
+        "Entertainment": ["cinema", "movie theater", "theater", "amusement", "entertainment", "arcade", "playhouse",
+                          "live performance"]
     }
 
-    unwanted_words = ["street", "drive", "way", "avenue", "road", "development", "developments", "residential", "commercial", "office", "plaza", "mall", "complex", "apartment", "lane", "parkway", "court", "common", "commons", "place"]
+    # Define a list of unwanted terms that should be filtered out from landmark names
+    unwanted_words = ["street", "drive", "way", "avenue", "road", "development", "developments", "residential",
+                      "commercial", "office", "plaza", "mall", "complex", "apartment", "lane", "parkway", "court",
+                      "common", "commons", "place"]
 
+    # Helper function to check if a name contains unwanted terms
     def is_unwanted(name: str) -> bool:
         lower_name = name.lower()
         return any(word in lower_name for word in unwanted_words)
 
+    # Calculate bounding box for the search area based on the max distance
     lat_delta = max_distance / 69.0
     lon_delta = max_distance / (69.0 * math.cos(math.radians(lat)))
     min_lat = lat - lat_delta
@@ -85,12 +100,14 @@ def get_landmarks(lat: float, lng: float, landmark_types: str, max_distance: flo
     bbox = f"{min_lon},{min_lat},{max_lon},{max_lat}"
     print("Calculated bounding box:", bbox)
 
+    # Initialize a dictionary to store candidate landmarks for each category
     candidates_per_category = {cat: [] for cat in categories}
 
+    # Perform API requests for each category's landmarks
     for cat in categories:
-        alternatives = query_mapping.get(cat, [cat])
+        alternatives = query_mapping.get(cat, [cat])  # Use the category name or mapped queries
         for search_query in alternatives:
-            encoded_query = urllib.parse.quote(search_query)
+            encoded_query = urllib.parse.quote(search_query)  # URL encode the search term
             url = (
                 f"https://api.mapbox.com/search/searchbox/v1/forward?q={encoded_query}"
                 f"&types=poi&proximity={lng},{lat}&bbox={bbox}&limit=10"
@@ -98,48 +115,64 @@ def get_landmarks(lat: float, lng: float, landmark_types: str, max_distance: flo
             )
             print(f"\nRequesting for category '{cat}' using keyword '{search_query}' (encoded: '{encoded_query}'):")
             print("Request URL:", url)
+
+            # Make the request to the Mapbox API
             res = requests.get(url)
             if res.status_code != 200:
                 print(f"Error fetching for '{search_query}': {res.status_code}")
-                continue
+                continue  # Skip to the next query if the request fails
+
             result = res.json()
             features = result.get("features", [])
             print(f"Found {len(features)} features for keyword '{search_query}'")
+
+            # Process the returned features
             for feat in features:
                 coords = feat.get("geometry", {}).get("coordinates")
                 if not coords or len(coords) < 2:
-                    continue
+                    continue  # Skip if coordinates are invalid
                 f_lon = float(coords[0])
                 f_lat = float(coords[1])
+
+                # Calculate the distance between the current point and the landmark
                 dist = haversine_distance(lat, lng, f_lat, f_lon)
                 if dist > max_distance:
-                    continue
+                    continue  # Skip if the landmark is too far away
+
                 prop = feat.get("properties", {})
                 name = prop.get("name", search_query)
+
+                # Skip unwanted landmarks based on their name
                 if is_unwanted(name):
                     continue
+
+                # Get the relevance score or default to 0 if not present
                 try:
                     relevance = float(prop.get("relevance", 0))
                 except (TypeError, ValueError):
                     relevance = 0
+
+                # Create a candidate landmark and add it to the list
                 candidate = {
                     "name": name,
                     "lat": f_lat,
                     "long": f_lon,
-                    "type": "Park" if cat == "Parks" else cat,
+                    "type": "Park" if cat == "Parks" else cat,  # Special case for "Parks"
                     "relevance": relevance
                 }
                 candidates_per_category[cat].append(candidate)
 
+    # Select the best candidates for each category based on relevance and category counts
     selected_candidates = []
     for cat in categories:
         desired = int(category_counts.get(cat, 1))
         cat_candidates = candidates_per_category.get(cat, [])
-        random.shuffle(cat_candidates)  # <-- Add randomness to candidates
-        selected = sorted(cat_candidates[:desired], key=lambda x: x["relevance"], reverse=True)  # Pick best of random
+        random.shuffle(cat_candidates)  # Shuffle to introduce randomness
+        selected = sorted(cat_candidates[:desired], key=lambda x: x["relevance"], reverse=True)  # Sort by relevance
         selected_candidates.extend(selected)
         print(f"Selected for {cat} (desired {desired}):", selected)
 
+    # Ensure uniqueness of landmarks, keeping the one with the highest relevance
     unique = {}
     for c in selected_candidates:
         key = (c["name"], c["type"])
@@ -150,18 +183,21 @@ def get_landmarks(lat: float, lng: float, landmark_types: str, max_distance: flo
             unique[key] = c
     selected_candidates = list(unique.values())
 
+    # Limit the number of destinations if necessary
     if len(selected_candidates) > num_destinations:
         random.shuffle(selected_candidates)
         selected_candidates = selected_candidates[:num_destinations]
 
+    # Remove the "relevance" field from the final result
     for candidate in selected_candidates:
         candidate.pop("relevance", None)
 
+    # Log and return the final selected landmarks
     print("\nFinal landmarks returned:", selected_candidates)
     return selected_candidates
 
 
-
+# finally, generate the trip
 @router.post("/generate_trip", response_model=TripResponse)
 def generate_trip(
         group: int,
@@ -202,6 +238,7 @@ def generate_trip(
     )
 
 
+# custom create
 @router.post("/custom_trip", response_model=TripResponse)
 def create_custom_trip(
         group: int,
@@ -234,6 +271,7 @@ def create_custom_trip(
     )
 
 
+# trips by uid
 @router.get("/list_trips_by_user/{uid}", response_model=List[TripSummaryResponse])
 def list_trips_by_user(uid: str, db: Session = Depends(get_db)):
     trips = db.query(Trip).filter(Trip.uid == uid).all()
@@ -251,6 +289,7 @@ def list_trips_by_user(uid: str, db: Session = Depends(get_db)):
     ]
 
 
+# get trip
 @router.get("/get_trip/{trip_id}", response_model=TripResponse)
 def get_trip(trip_id: int, db: Session = Depends(get_db)):
     trip = db.query(Trip).filter(Trip.tid == trip_id).first()
@@ -268,6 +307,7 @@ def get_trip(trip_id: int, db: Session = Depends(get_db)):
     )
 
 
+# update trip
 @router.put("/update_trip/{trip_id}", response_model=TripResponse)
 def update_trip(
         trip_id: int,
@@ -310,6 +350,7 @@ def update_trip(
     )
 
 
+# delete trip
 @router.delete("/delete_trip/{trip_id}")
 def delete_trip(trip_id: int, db: Session = Depends(get_db)):
     trip = db.query(Trip).filter(Trip.tid == trip_id).first()
@@ -321,7 +362,7 @@ def delete_trip(trip_id: int, db: Session = Depends(get_db)):
     return {"message": "Trip deleted successfully"}
 
 
+# trips by group
 @router.get("/list_trips_by_group/{gid}", response_model=list[AlternateTripResponse])
 def list_trips_by_group(gid: int, db: Session = Depends(get_db)):
     return db.query(Trip).filter(Trip.group == gid).all()
-
